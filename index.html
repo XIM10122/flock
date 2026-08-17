@@ -9,16 +9,23 @@
 <meta name="apple-mobile-web-app-title" content="Flock">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="icon-192.png">
+<link rel="icon" type="image/svg+xml" href="icon.svg">
+<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
 <title>Flock — Charleston plate readers</title>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="">
 <style>
-  /* Same five colours as the board: Kokushoku wall, Young Night cards, Eclipse = chosen,
-     Mechrite red for the one accent, Ravine for words. Depth is value, not shadow. */
+  /* Greyscale first, then one warm accent (design-taste §11a). Amber is the emblem's bolt and
+     it is the only colour on the chrome. Red stays for the readers themselves on the map, so the
+     two never compete: amber = you and your controls, red = them. Depth is value, then two
+     cheap shadows on anything raised — a contact shadow and a soft lift, same light for all. */
   :root{
     --wall:#171213; --card:#242323; --key:#302D2C; --chosen:#3D3837; --sink:#191616;
-    --line:rgba(210,206,199,.10);
+    --line:rgba(210,206,199,.10); --line2:rgba(210,206,199,.16);
     --ink:#D2CEC7; --ink2:#A29E98; --ink3:#6F6B66;
     --red:#A11A17; --red-tx:#E2635C;
+    --amber:#D68A3E; --amber-tx:#E9A75B; --amber-dim:rgba(214,138,62,.14);
+    --lift:0 1px 0 rgba(255,255,255,.04) inset, 0 1px 2px rgba(0,0,0,.35), 0 8px 24px -12px rgba(0,0,0,.6);
+    --r:10px; --r-s:8px; --r-pill:999px;
     --font:ui-sans-serif,-apple-system,"Segoe UI",Inter,system-ui,sans-serif;
     --mono:ui-monospace,"Cascadia Mono",Consolas,Menlo,monospace;
     --sat:env(safe-area-inset-top,0px); --sab:env(safe-area-inset-bottom,0px);
@@ -29,9 +36,10 @@
   @supports (height:100dvh){html,body{height:100dvh}}
   body{background:var(--wall);color:var(--ink);font:14px/1.45 var(--font);-webkit-font-smoothing:antialiased;
        display:grid;grid-template-rows:auto 1fr;overflow:hidden;padding-top:var(--sat)}
-  :focus-visible{outline:2px solid var(--red-tx);outline-offset:2px}
+  :focus-visible{outline:2px solid var(--amber);outline-offset:2px}
 
-  header{display:flex;align-items:baseline;gap:12px;padding:10px 14px;border-bottom:1px solid var(--line);background:var(--card)}
+  header{display:flex;align-items:center;gap:10px;padding:8px 14px;border-bottom:1px solid var(--line);background:var(--card)}
+  header .mark{width:30px;height:30px;flex:none;color:var(--ink);border-radius:50%;box-shadow:0 0 0 1px var(--line2),0 0 18px -4px var(--amber-dim)}
   header b{font-size:16px;letter-spacing:-.01em}
   header small{color:var(--ink3);font-size:11px;letter-spacing:.14em;text-transform:uppercase}
   header .n{margin-left:auto;font:12px var(--mono);color:var(--ink2);font-variant-numeric:tabular-nums;white-space:nowrap}
@@ -40,44 +48,49 @@
   aside{display:grid;grid-template-rows:auto auto 1fr;min-height:0;border-right:1px solid var(--line);background:var(--card)}
 
   .find{display:grid;grid-template-columns:1fr auto;gap:6px;padding:10px 12px 6px}
-  .find input{width:100%;padding:9px 11px;border-radius:8px;border:1px solid var(--line);background:var(--sink);color:var(--ink);font:inherit;min-width:0}
+  .find input{width:100%;padding:10px 12px;border-radius:var(--r);border:1px solid var(--line);background:var(--sink);color:var(--ink);font:inherit;min-width:0;box-shadow:inset 0 1px 2px rgba(0,0,0,.35);transition:border-color .15s,box-shadow .15s}
   .find input::placeholder{color:var(--ink3)}
-  .find input:focus{outline:none;border-color:var(--ink3)}
+  .find input:focus{outline:none;border-color:var(--amber);box-shadow:inset 0 1px 2px rgba(0,0,0,.35),0 0 0 3px var(--amber-dim)}
   /* one line under the box for lookup progress and failures, in place of alert() */
   .status{grid-column:1/-1;font-size:12px;color:var(--ink2);min-height:0;padding:2px 2px 0}
   .status:empty{display:none}
   .status.bad{color:var(--red-tx)}
-  button{font:inherit;color:var(--ink);background:var(--key);border:1px solid var(--line);border-radius:8px;padding:8px 11px;cursor:pointer;white-space:nowrap}
+  .status:not(.bad){color:var(--amber-tx)}
+  button{font:inherit;color:var(--ink);background:var(--key);border:1px solid var(--line);border-radius:var(--r);padding:9px 12px;cursor:pointer;white-space:nowrap;box-shadow:var(--lift);transition:background .15s,border-color .15s,color .15s}
   button:hover{background:var(--chosen)}
-  button.on{background:var(--chosen);font-weight:600}
+  button.on{background:var(--chosen);font-weight:600;border-color:var(--amber);color:var(--amber-tx)}
   button[disabled]{opacity:.5;cursor:default}
   button.busy{color:transparent;position:relative}
   button.busy::after{content:"";position:absolute;inset:0;margin:auto;width:12px;height:12px;border:2px solid var(--ink3);border-top-color:var(--ink);border-radius:50%;animation:spin .8s linear infinite}
   @keyframes spin{to{transform:rotate(360deg)}}
 
   .chips{display:flex;gap:6px;padding:0 12px 10px;flex-wrap:wrap;border-bottom:1px solid var(--line)}
-  .chips button{padding:5px 9px;font-size:12px;border-radius:999px}
-  .chips button.on{color:var(--ink)}
+  .chips button{padding:5px 10px;font-size:12px;border-radius:var(--r-pill);box-shadow:none}
+  .chips button small{color:var(--ink3);font-weight:400;margin-left:2px}
+  .chips button.on small{color:var(--amber-tx);opacity:.8}
+  .chips button.on{color:var(--amber-tx);background:var(--amber-dim)}
   .chips .sp{flex:1}
   .chips .near{font-size:12px;color:var(--ink2);align-self:center;font-family:var(--mono);font-variant-numeric:tabular-nums}
   .chips .near b{color:var(--ink);font-weight:600}
   .chips .near a{color:var(--ink3);text-decoration:none;margin-left:6px;cursor:pointer}
+  .chips .near a:hover{color:var(--ink)}
 
   .list{overflow:auto;padding:6px 0;scrollbar-width:thin;scrollbar-color:var(--key) transparent;-webkit-overflow-scrolling:touch}
   .town{position:sticky;top:0;z-index:1;padding:8px 14px 4px;font:600 10.5px/1 var(--mono);letter-spacing:.14em;text-transform:uppercase;color:var(--ink3);background:var(--card)}
-  .li{display:grid;grid-template-columns:1fr auto;gap:2px 10px;padding:9px 14px;cursor:pointer;border-left:2px solid transparent}
+  .li{display:grid;grid-template-columns:1fr auto;gap:2px 10px;padding:10px 14px;cursor:pointer;border-left:2px solid transparent;transition:background .12s}
   .li:hover{background:var(--key)}
-  .li.on{background:var(--chosen);border-left-color:var(--red)}
+  .li.on{background:var(--chosen);border-left-color:var(--amber)}
   .li .a{font-weight:500}
   .li.on .a{font-weight:600}
   .li .s{grid-column:1/-1;font-size:12px;color:var(--ink2)}
   .li .d{font:11px var(--mono);color:var(--ink3);align-self:start;padding-top:2px;font-variant-numeric:tabular-nums;text-align:right}
   .li .d b{display:block;color:var(--ink2);font-weight:600}
-  .li.on .d,.li.on .s,.li.on .d b{color:var(--ink)}
+  .li.on .d,.li.on .s{color:var(--ink)}
+  .li.on .d b{color:var(--amber-tx)}
   .li.kb{background:var(--key)}
   .empty{padding:24px 14px;color:var(--ink3);text-align:center}
   .empty code{color:var(--ink2)}
-  .empty button{margin-top:10px;font-size:12px;padding:6px 10px}
+  .empty button{margin-top:12px;font-size:12px;padding:7px 12px}
   .skel{height:38px;margin:6px 14px;border-radius:6px;background:linear-gradient(90deg,var(--key),var(--chosen),var(--key));background-size:200% 100%;animation:sk 1.2s linear infinite}
   @keyframes sk{to{background-position:-200% 0}}
 
@@ -89,13 +102,23 @@
   .pin.on i{background:var(--red-tx);box-shadow:0 0 0 2px var(--wall),0 0 0 6px rgba(226,99,92,.25)}
   .pin s{position:absolute;left:7px;top:-7px;width:2px;height:10px;background:var(--red-tx);transform-origin:1px 15px;border-radius:1px}
   .pin.on s{background:#fff}
-  .me{width:18px;height:18px;border-radius:50%;background:#63b3ff;box-shadow:0 0 0 3px var(--wall),0 0 0 6px rgba(99,179,255,.3)}
-  .leaflet-popup-content-wrapper,.leaflet-popup-tip{background:var(--card);color:var(--ink);box-shadow:0 1px 0 var(--line)}
+  .me{width:22px;height:22px;position:relative}
+  .me::before{content:"";position:absolute;inset:4px;border-radius:50%;background:var(--amber);box-shadow:0 0 0 3px var(--wall),0 0 0 6px var(--amber-dim)}
+  .me .hd{position:absolute;left:8px;top:-8px;width:6px;height:14px;transform-origin:3px 19px;display:none}
+  .me .hd::before{content:"";position:absolute;left:0;top:0;border:3px solid transparent;border-bottom:9px solid var(--amber-tx);border-top:0}
+  .leaflet-popup-content-wrapper{border-radius:var(--r);border:1px solid var(--line2)}
+  .leaflet-popup-content-wrapper,.leaflet-popup-tip{background:var(--card);color:var(--ink);box-shadow:var(--lift)}
   .leaflet-popup-content{margin:10px 12px;font-size:13px;line-height:1.4}
   .leaflet-popup-content b{display:block;font-size:14px}
   .leaflet-popup-content small{color:var(--ink2);display:block}
-  .leaflet-popup-content a{color:var(--red-tx);text-decoration:none;font-size:12px;margin-right:10px}
-  .leaflet-control-zoom a{background:var(--card)!important;color:var(--ink)!important;border-color:var(--line)!important}
+  .leaflet-popup-content .acts{display:flex;flex-wrap:wrap;gap:4px 12px;margin-top:8px}
+  .leaflet-popup-content a{color:var(--amber-tx);text-decoration:none;font-size:12px}
+  .leaflet-popup-content a:hover{text-decoration:underline}
+  .leaflet-popup-content a.fix{color:var(--ink3)}
+  .leaflet-popup-content a.fix:hover{color:var(--ink2)}
+  .addpop .leaflet-popup-content-wrapper{border-color:var(--amber)}
+  .leaflet-control-zoom{border:0!important;box-shadow:var(--lift)!important;border-radius:var(--r-s)!important;overflow:hidden}
+  .leaflet-control-zoom a{background:var(--card)!important;color:var(--ink)!important;border-color:var(--line)!important;width:32px!important;height:32px!important;line-height:30px!important}
   .leaflet-control-attribution{background:rgba(23,18,19,.75)!important;color:var(--ink3)!important;font-size:10px}
   .leaflet-control-attribution a{color:var(--ink2)!important}
   .leaflet-tile-pane{filter:brightness(.72) contrast(1.05) saturate(.7)}
@@ -104,10 +127,10 @@
   /* "Save to phone": what to tap, drawn rather than described, because the wording of
      these menu items differs between phones but the icons do not. */
   .built{color:var(--ink3);font-size:11px;white-space:nowrap}
-  button.ghost{background:transparent;border-color:var(--line);color:var(--ink2);font-size:12px;padding:5px 9px}
+  button.ghost{background:transparent;border-color:var(--line);color:var(--ink2);font-size:12px;padding:5px 10px;box-shadow:none}
   button.ghost:hover{background:var(--key);color:var(--ink)}
-  dialog#sheet{border:1px solid var(--line);border-radius:14px;background:var(--card);color:var(--ink);
-               padding:0;width:min(420px,calc(100vw - 28px));max-height:86vh;overflow:auto}
+  dialog#sheet{border:1px solid var(--line2);border-radius:16px;background:var(--card);color:var(--ink);
+               padding:0;width:min(420px,calc(100vw - 28px));max-height:86vh;overflow:auto;box-shadow:var(--lift),0 24px 64px -24px rgba(0,0,0,.8)}
   dialog#sheet::backdrop{background:rgba(0,0,0,.55)}
   .sheet-h{display:flex;align-items:center;gap:10px;padding:14px 16px 10px}
   .sheet-h b{font-size:15px}
@@ -120,13 +143,13 @@
   .step .art svg{width:24px;height:24px}
   .step .n{font:600 10.5px/1 var(--mono);letter-spacing:.14em;color:var(--ink3);text-transform:uppercase}
   .step p{margin:3px 0 0;font-size:13px;color:var(--ink)}
-  .step p em{font-style:normal;color:var(--red-tx)}
+  .step p em{font-style:normal;color:var(--amber-tx)}
   .sheet-f{padding:0 16px 16px;font-size:12px;color:var(--ink3)}
   .sheet-f button{width:100%;margin-bottom:10px;font-size:13px;padding:10px}
 
-  .layers{position:absolute;right:10px;top:10px;z-index:500;display:flex;gap:1px;background:var(--line);border-radius:8px;overflow:hidden}
-  .layers button{border:0;border-radius:0;padding:6px 10px;background:var(--card);color:var(--ink2);font-size:12px}
-  .layers button.on{background:var(--chosen);color:var(--ink)}
+  .layers{position:absolute;right:10px;top:10px;z-index:500;display:flex;gap:1px;background:var(--line2);border-radius:var(--r-s);overflow:hidden;box-shadow:var(--lift)}
+  .layers button{border:0;border-radius:0;padding:7px 11px;background:var(--card);color:var(--ink2);font-size:12px;box-shadow:none}
+  .layers button.on{background:var(--chosen);color:var(--amber-tx)}
 
   /* phone: list under a shorter map, both scrollable, nothing under the home bar */
   @media (max-width:760px){
@@ -149,6 +172,7 @@
 </head>
 <body>
 <header>
+  <svg class="mark" viewBox="0 0 100 100" aria-hidden="true"><defs><clipPath id="fl-c"><circle cx="50" cy="50" r="50"/></clipPath><mask id="fl-m-out"><rect width="100" height="100" fill="#fff"/><g fill="#000"><polygon points="14,48 64,48 64,76 14,76"/><polygon points="64,43 88,36 88,83 64,81"/><polygon points="24,22 35,22 35,48 24,48"/></g></mask><mask id="fl-m-in"><rect width="100" height="100" fill="#000"/><g fill="#fff"><polygon points="14,48 64,48 64,76 14,76"/><polygon points="64,43 88,36 88,83 64,81"/><polygon points="24,22 35,22 35,48 24,48"/></g></mask><mask id="fl-m-cut"><rect width="100" height="100" fill="#fff"/><circle cx="82" cy="60" r="7.0" fill="#000"/><polygon points="49.92,-3.76 39.68,28.48 45.44,28.48 42.88,55.76 55.68,22.28 48.64,22.28 53.12,-3.76" fill="#000" stroke="#000" stroke-width="1.2" stroke-linejoin="round"/></mask></defs><g clip-path="url(#fl-c)"><g mask="url(#fl-m-cut)" stroke="currentColor" stroke-linecap="butt"><g mask="url(#fl-m-out)"><line x1="-231.425" y1="-20" x2="-91.4249" y2="120" stroke-width="1.15"/><line x1="-222.233" y1="-20" x2="-82.2325" y2="120" stroke-width="1.15"/><line x1="-213.04" y1="-20" x2="-73.0402" y2="120" stroke-width="1.15"/><line x1="-203.848" y1="-20" x2="-63.8478" y2="120" stroke-width="1.15"/><line x1="-194.655" y1="-20" x2="-54.6554" y2="120" stroke-width="1.15"/><line x1="-185.463" y1="-20" x2="-45.463" y2="120" stroke-width="1.15"/><line x1="-176.271" y1="-20" x2="-36.2706" y2="120" stroke-width="1.15"/><line x1="-167.078" y1="-20" x2="-27.0782" y2="120" stroke-width="1.15"/><line x1="-157.886" y1="-20" x2="-17.8858" y2="120" stroke-width="1.15"/><line x1="-148.693" y1="-20" x2="-8.69343" y2="120" stroke-width="1.15"/><line x1="-139.501" y1="-20" x2="0.498954" y2="120" stroke-width="1.15"/><line x1="-130.309" y1="-20" x2="9.69134" y2="120" stroke-width="1.15"/><line x1="-121.116" y1="-20" x2="18.8837" y2="120" stroke-width="1.15"/><line x1="-111.924" y1="-20" x2="28.0761" y2="120" stroke-width="1.15"/><line x1="-102.731" y1="-20" x2="37.2685" y2="120" stroke-width="1.15"/><line x1="-93.5391" y1="-20" x2="46.4609" y2="120" stroke-width="1.15"/><line x1="-84.3467" y1="-20" x2="55.6533" y2="120" stroke-width="1.15"/><line x1="-75.1543" y1="-20" x2="64.8457" y2="120" stroke-width="1.15"/><line x1="-65.9619" y1="-20" x2="74.0381" y2="120" stroke-width="1.15"/><line x1="-56.7696" y1="-20" x2="83.2304" y2="120" stroke-width="1.15"/><line x1="-47.5772" y1="-20" x2="92.4228" y2="120" stroke-width="1.15"/><line x1="-38.3848" y1="-20" x2="101.615" y2="120" stroke-width="1.15"/><line x1="-29.1924" y1="-20" x2="110.808" y2="120" stroke-width="1.15"/><line x1="-20" y1="-20" x2="120" y2="120" stroke-width="1.15"/><line x1="-10.8076" y1="-20" x2="129.192" y2="120" stroke-width="1.15"/><line x1="-1.61522" y1="-20" x2="138.385" y2="120" stroke-width="1.15"/><line x1="7.57716" y1="-20" x2="147.577" y2="120" stroke-width="1.15"/><line x1="16.7696" y1="-20" x2="156.77" y2="120" stroke-width="1.15"/><line x1="25.9619" y1="-20" x2="165.962" y2="120" stroke-width="1.15"/><line x1="35.1543" y1="-20" x2="175.154" y2="120" stroke-width="1.15"/><line x1="44.3467" y1="-20" x2="184.347" y2="120" stroke-width="1.15"/><line x1="53.5391" y1="-20" x2="193.539" y2="120" stroke-width="1.15"/><line x1="62.7315" y1="-20" x2="202.731" y2="120" stroke-width="1.15"/><line x1="71.9239" y1="-20" x2="211.924" y2="120" stroke-width="1.15"/><line x1="81.1163" y1="-20" x2="221.116" y2="120" stroke-width="1.15"/><line x1="90.3087" y1="-20" x2="230.309" y2="120" stroke-width="1.15"/><line x1="99.501" y1="-20" x2="239.501" y2="120" stroke-width="1.15"/><line x1="108.693" y1="-20" x2="248.693" y2="120" stroke-width="1.15"/><line x1="117.886" y1="-20" x2="257.886" y2="120" stroke-width="1.15"/><line x1="127.078" y1="-20" x2="267.078" y2="120" stroke-width="1.15"/><line x1="136.271" y1="-20" x2="276.271" y2="120" stroke-width="1.15"/><line x1="145.463" y1="-20" x2="285.463" y2="120" stroke-width="1.15"/><line x1="154.655" y1="-20" x2="294.655" y2="120" stroke-width="1.15"/><line x1="163.848" y1="-20" x2="303.848" y2="120" stroke-width="1.15"/><line x1="173.04" y1="-20" x2="313.04" y2="120" stroke-width="1.15"/></g><g mask="url(#fl-m-in)"><line x1="-231.425" y1="-20" x2="-91.4249" y2="120" stroke-width="3.335"/><line x1="-222.233" y1="-20" x2="-82.2325" y2="120" stroke-width="3.335"/><line x1="-213.04" y1="-20" x2="-73.0402" y2="120" stroke-width="3.335"/><line x1="-203.848" y1="-20" x2="-63.8478" y2="120" stroke-width="3.335"/><line x1="-194.655" y1="-20" x2="-54.6554" y2="120" stroke-width="3.335"/><line x1="-185.463" y1="-20" x2="-45.463" y2="120" stroke-width="3.335"/><line x1="-176.271" y1="-20" x2="-36.2706" y2="120" stroke-width="3.335"/><line x1="-167.078" y1="-20" x2="-27.0782" y2="120" stroke-width="3.335"/><line x1="-157.886" y1="-20" x2="-17.8858" y2="120" stroke-width="3.335"/><line x1="-148.693" y1="-20" x2="-8.69343" y2="120" stroke-width="3.335"/><line x1="-139.501" y1="-20" x2="0.498954" y2="120" stroke-width="3.335"/><line x1="-130.309" y1="-20" x2="9.69134" y2="120" stroke-width="3.335"/><line x1="-121.116" y1="-20" x2="18.8837" y2="120" stroke-width="3.335"/><line x1="-111.924" y1="-20" x2="28.0761" y2="120" stroke-width="3.335"/><line x1="-102.731" y1="-20" x2="37.2685" y2="120" stroke-width="3.335"/><line x1="-93.5391" y1="-20" x2="46.4609" y2="120" stroke-width="3.335"/><line x1="-84.3467" y1="-20" x2="55.6533" y2="120" stroke-width="3.335"/><line x1="-75.1543" y1="-20" x2="64.8457" y2="120" stroke-width="3.335"/><line x1="-65.9619" y1="-20" x2="74.0381" y2="120" stroke-width="3.335"/><line x1="-56.7696" y1="-20" x2="83.2304" y2="120" stroke-width="3.335"/><line x1="-47.5772" y1="-20" x2="92.4228" y2="120" stroke-width="3.335"/><line x1="-38.3848" y1="-20" x2="101.615" y2="120" stroke-width="3.335"/><line x1="-29.1924" y1="-20" x2="110.808" y2="120" stroke-width="3.335"/><line x1="-20" y1="-20" x2="120" y2="120" stroke-width="3.335"/><line x1="-10.8076" y1="-20" x2="129.192" y2="120" stroke-width="3.335"/><line x1="-1.61522" y1="-20" x2="138.385" y2="120" stroke-width="3.335"/><line x1="7.57716" y1="-20" x2="147.577" y2="120" stroke-width="3.335"/><line x1="16.7696" y1="-20" x2="156.77" y2="120" stroke-width="3.335"/><line x1="25.9619" y1="-20" x2="165.962" y2="120" stroke-width="3.335"/><line x1="35.1543" y1="-20" x2="175.154" y2="120" stroke-width="3.335"/><line x1="44.3467" y1="-20" x2="184.347" y2="120" stroke-width="3.335"/><line x1="53.5391" y1="-20" x2="193.539" y2="120" stroke-width="3.335"/><line x1="62.7315" y1="-20" x2="202.731" y2="120" stroke-width="3.335"/><line x1="71.9239" y1="-20" x2="211.924" y2="120" stroke-width="3.335"/><line x1="81.1163" y1="-20" x2="221.116" y2="120" stroke-width="3.335"/><line x1="90.3087" y1="-20" x2="230.309" y2="120" stroke-width="3.335"/><line x1="99.501" y1="-20" x2="239.501" y2="120" stroke-width="3.335"/><line x1="108.693" y1="-20" x2="248.693" y2="120" stroke-width="3.335"/><line x1="117.886" y1="-20" x2="257.886" y2="120" stroke-width="3.335"/><line x1="127.078" y1="-20" x2="267.078" y2="120" stroke-width="3.335"/><line x1="136.271" y1="-20" x2="276.271" y2="120" stroke-width="3.335"/><line x1="145.463" y1="-20" x2="285.463" y2="120" stroke-width="3.335"/><line x1="154.655" y1="-20" x2="294.655" y2="120" stroke-width="3.335"/><line x1="163.848" y1="-20" x2="303.848" y2="120" stroke-width="3.335"/><line x1="173.04" y1="-20" x2="313.04" y2="120" stroke-width="3.335"/></g></g><polygon points="49.92,-3.76 39.68,28.48 45.44,28.48 42.88,55.76 55.68,22.28 48.64,22.28 53.12,-3.76" fill="var(--amber)"/></g></svg>
   <b>Flock</b><small>plate readers · Charleston</small>
   <small id="built" class="built"></small>
   <button id="install" class="ghost" hidden>Save to phone</button>
@@ -261,6 +285,12 @@ function coneFor(c) {
 }
 
 const gmaps = c => `https://www.google.com/maps?q=${c.lat},${c.lon}`;
+// The data is OpenStreetMap's. "Wrong / gone / missing" goes back to the source, at this
+// exact node, in OSM's own editor — the person standing under the pole is the one who knows.
+const osmEdit = c => /^\d+$/.test(c.id)
+  ? `https://www.openstreetmap.org/edit?node=${c.id}#map=19/${c.lat}/${c.lon}`
+  : `https://www.openstreetmap.org/edit#map=19/${c.lat}/${c.lon}`;
+const osmAdd = (lat, lon) => `https://www.openstreetmap.org/edit#map=19/${lat}/${lon}`;
 function popupHtml(c) {
   const bits = [];
   if (c.operator) bits.push(esc(c.operator));
@@ -268,7 +298,7 @@ function popupHtml(c) {
   if (dirText(c.direction)) bits.push('faces ' + dirText(c.direction));
   const dist = HOME ? `<small>${fmtMi(milesTo(c))} from ${esc(HOME.name)}</small>` : '';
   return `<b>${esc(c.label)}</b><small>${bits.join(' · ') || 'no details recorded'}</small>${dist}
-    <div style="margin-top:6px"><a href="${gmaps(c)}" target="_blank" rel="noopener">Google Maps ↗</a><a href="#" data-copy="${esc(c.label)}">Copy address</a><a href="#" data-share="${esc(c.id)}">Copy link</a></div>`;
+    <div class="acts"><a href="${gmaps(c)}" target="_blank" rel="noopener">Google Maps ↗</a><a href="#" data-copy="${esc(c.label)}">Copy address</a><a href="#" data-share="${esc(c.id)}">Copy link</a><a href="${osmEdit(c)}" target="_blank" rel="noopener" title="Wrong, moved, or gone? Fix it at the source" class="fix">Fix on OSM ↗</a></div>`;
 }
 map.on('popupopen', e => {
   const el = e.popup.getElement();
@@ -283,6 +313,17 @@ map.on('popupopen', e => {
   const s = el.querySelector('[data-share]'); if (s) copy(s, linkTo(s.dataset.share));
 });
 
+// A reader that isn't on the map: press and hold where it is (right-click on a desk),
+// and OSM's editor opens there. Leaflet fires contextmenu for both.
+map.on('contextmenu', e => {
+  const { lat, lng } = e.latlng;
+  L.popup({ closeButton: false, className: 'addpop' })
+    .setLatLng(e.latlng)
+    .setContent(`<b>Reader here that isn't on the map?</b><small>${lat.toFixed(5)}, ${lng.toFixed(5)}</small>
+      <div class="acts"><a href="${osmAdd(lat, lng)}" target="_blank" rel="noopener" class="fix">Add it on OSM ↗</a></div>`)
+    .openOn(map);
+});
+
 // ---- distance
 const milesTo = c => HOME ? haversine(HOME.lat, HOME.lon, c.lat, c.lon) : null;
 function haversine(a, b, c, d) {
@@ -292,36 +333,70 @@ function haversine(a, b, c, d) {
 }
 const fmtMi = m => m < .1 ? Math.round(m * 5280) + ' ft' : m.toFixed(m < 10 ? 1 : 0) + ' mi';
 
-function setHome(lat, lon, name) {
+// The "me" mark carries a heading arrow. Leaflet can't rotate the whole map, and rotating
+// a map in a moving car is worse than a fixed north-up with an arrow anyway.
+const meIcon = () => L.divIcon({ className: '', iconSize: [22, 22], iconAnchor: [11, 11], html: '<div class="me"><i class="hd"></i></div>' });
+let HEADING = null;
+function setHeading(deg) {
+  HEADING = (deg == null || isNaN(deg)) ? null : deg;
+  const el = HOMEMARK?.getElement()?.querySelector('.hd');
+  if (!el) return;
+  el.style.display = HEADING == null ? 'none' : '';
+  if (HEADING != null) el.style.transform = `rotate(${HEADING}deg)`;
+}
+
+function setHome(lat, lon, name, { quiet } = {}) {
+  const moved = !HOME || HOME.name !== name;
   HOME = { lat, lon, name };
-  if (HOMEMARK) map.removeLayer(HOMEMARK);
-  if (RING) map.removeLayer(RING);
-  HOMEMARK = L.marker([lat, lon], { icon: L.divIcon({ className: '', iconSize: [18, 18], iconAnchor: [9, 9], html: '<div class="me"></div>' }), title: name, zIndexOffset: 1000 }).addTo(map);
-  RING = L.circle([lat, lon], { radius: 1609.34, color: '#63b3ff', weight: 1, opacity: .5, fillOpacity: .04, interactive: false }).addTo(map);
+  if (!HOMEMARK) {
+    HOMEMARK = L.marker([lat, lon], { icon: meIcon(), title: name, zIndexOffset: 1000 }).addTo(map);
+    RING = L.circle([lat, lon], { radius: 1609.34, color: '#D68A3E', weight: 1, opacity: .45, fillOpacity: .03, interactive: false }).addTo(map);
+  } else {
+    HOMEMARK.setLatLng([lat, lon]); RING.setLatLng([lat, lon]);
+  }
+  setHeading(HEADING);
   for (const c of CAMS) MARK[c.id].setPopupContent(popupHtml(c));
-  fly([lat, lon], 13, .7);
+  // First fix flies in. Later fixes from the watch just nudge — no yanking the map
+  // out from under a finger that is dragging it.
+  if (moved && !quiet) fly([lat, lon], 13, .7);
+  else if (FOLLOW && !DRAGGING) map.panTo([lat, lon], { animate: !CALM.matches, duration: .4 });
   render($('#q').value);
 }
 function clearHome() {
+  stopWatch();
   HOME = null;
   if (HOMEMARK) map.removeLayer(HOMEMARK); if (RING) map.removeLayer(RING);
-  HOMEMARK = RING = null;
+  HOMEMARK = RING = null; HEADING = null;
   for (const c of CAMS) MARK[c.id].setPopupContent(popupHtml(c));
   render($('#q').value);
 }
 
+// "Near me" is a live watch, not a one-shot: the list re-sorts and the arrow turns as
+// you move. Tapping it again stops. Dragging the map pauses following until re-tapped.
+let WATCH = null, FOLLOW = false, DRAGGING = false;
+map.on('dragstart', () => { DRAGGING = true; if (FOLLOW) { FOLLOW = false; $('#near').classList.remove('on'); $('#near').textContent = 'Near me'; } });
+map.on('dragend', () => { DRAGGING = false; });
+function stopWatch() {
+  if (WATCH != null) navigator.geolocation.clearWatch(WATCH);
+  WATCH = null; FOLLOW = false;
+  const b = $('#near'); b.classList.remove('on', 'busy'); b.disabled = false; b.textContent = 'Near me';
+}
 $('#near').onclick = () => {
   const b = $('#near');
+  if (WATCH != null) { stopWatch(); return; }
   if (!navigator.geolocation) return say('This browser cannot share a location. Type an address instead.', true);
   b.classList.add('busy'); b.disabled = true; say('Finding you…');
-  navigator.geolocation.getCurrentPosition(p => {
-    b.classList.remove('busy'); b.disabled = false; say('');
-    setHome(p.coords.latitude, p.coords.longitude, 'you');
+  let first = true;
+  WATCH = navigator.geolocation.watchPosition(p => {
+    if (first) { b.classList.remove('busy'); b.disabled = false; b.classList.add('on'); b.textContent = 'Following'; say(''); FOLLOW = true; }
+    setHeading(p.coords.heading);   // null when standing still; the arrow hides itself
+    setHome(p.coords.latitude, p.coords.longitude, 'you', { quiet: !first });
+    first = false;
   }, err => {
-    b.classList.remove('busy'); b.disabled = false;
+    stopWatch();
     say(err.code === 1 ? 'Location was refused. Allow it in the browser, or type an address instead.'
                        : 'Could not get a location. Type an address instead.', true);
-  }, { enableHighAccuracy: true, timeout: 12000, maximumAge: 60000 });
+  }, { enableHighAccuracy: true, timeout: 15000, maximumAge: 5000 });
 };
 
 // An address in the box: Enter looks it up (Nominatim, no key) and measures from there.
@@ -388,22 +463,55 @@ const opMatch = c => OP === 'all' || opKey(c) === OP;
 // Markers follow the chips so the filter means something on the map too; wedges
 // additionally wait for zoom. Both only touch the map when something actually changed.
 function syncLayers() {
-  const wantCones = map.getZoom() >= CONE_ZOOM;
+  const z = map.getZoom();
+  const wantCones = z >= CONE_ZOOM;
+  const wantPins = z >= PIN_ZOOM;
   const opChanged = SHOWN !== OP;
-  if (!opChanged && wantCones === conesOn) return;
+  if (!opChanged && wantCones === conesOn && wantPins === pinsOn) return;
   for (const c of CAMS) {
     const on = opMatch(c);
-    if (opChanged) {
-      if (on && !map.hasLayer(MARK[c.id])) MARK[c.id].addTo(map);
-      else if (!on && map.hasLayer(MARK[c.id])) map.removeLayer(MARK[c.id]);
-    }
+    const wantPin = on && wantPins;
+    if (wantPin && !map.hasLayer(MARK[c.id])) MARK[c.id].addTo(map);
+    else if (!wantPin && map.hasLayer(MARK[c.id])) map.removeLayer(MARK[c.id]);
     const wantCone = on && wantCones;
     if (wantCone && !map.hasLayer(CONE[c.id])) CONE[c.id].addTo(map);
     else if (!wantCone && map.hasLayer(CONE[c.id])) map.removeLayer(CONE[c.id]);
   }
-  SHOWN = OP; conesOn = wantCones;
+  if (opChanged) densBuilt = false;   // the crowding counts depend on which readers are in
+  SHOWN = OP; conesOn = wantCones; pinsOn = wantPins;
+  syncDensity(!wantPins);
 }
 map.on('zoomend', syncLayers);
+
+// ---- density, below PIN_ZOOM
+// Two hundred identical pins on a county hide the only interesting fact at that scale:
+// where they cluster. So under PIN_ZOOM the pins go and each reader becomes one soft
+// disc whose size is how many others sit within ~800 m of it. One mark, one parameter.
+const PIN_ZOOM = 13;
+let pinsOn = true;
+const DENS = L.layerGroup();
+let densBuilt = false;
+function buildDensity() {
+  DENS.clearLayers();
+  const R = 0.5;   // miles; the crowding radius
+  const rows = CAMS.filter(opMatch);
+  for (const c of rows) {
+    let n = 0;
+    for (const o of rows) if (o !== c && haversine(c.lat, c.lon, o.lat, o.lon) < R) n++;
+    // 1 neighbour -> small, 12+ -> big. Radius in metres so it scales with the map.
+    const m = 120 + Math.min(n, 12) * 55;
+    DENS.addLayer(L.circle([c.lat, c.lon], { radius: m, stroke: false, fillColor: '#A11A17', fillOpacity: .16, interactive: false }));
+    // the reader itself, so the field still has its points
+    DENS.addLayer(L.circleMarker([c.lat, c.lon], { radius: 2.2, stroke: false, fillColor: '#E2635C', fillOpacity: .9, interactive: false }));
+  }
+  densBuilt = true;
+}
+function syncDensity(want) {
+  if (want) {
+    if (!densBuilt) buildDensity();
+    if (!map.hasLayer(DENS)) DENS.addTo(map);
+  } else if (map.hasLayer(DENS)) map.removeLayer(DENS);
+}
 
 function select(id, move) {
   const prev = byId(CUR);
@@ -412,6 +520,8 @@ function select(id, move) {
   const c = byId(id), m = MARK[id];
   if (!c || !m) return;
   m.setIcon(pinIcon(c.direction, true));
+  // Below PIN_ZOOM the marker isn't on the map yet; put it there so the popup has an anchor.
+  if (!map.hasLayer(m)) m.addTo(map);
   if (move) fly([c.lat, c.lon], Math.max(map.getZoom(), 17), .6);
   m.openPopup();
   KB = ROWS.findIndex(r => r.id === id);

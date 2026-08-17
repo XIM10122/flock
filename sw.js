@@ -1,5 +1,5 @@
 const V = 'flock-202608170751';
-const CORE = ['./', './index.html', './manifest.webmanifest', './icon-192.png', './icon-512.png'];
+const CORE = ['./', './index.html', './manifest.webmanifest', './icon-192.png', './icon-512.png', './icon.svg'];
 // Pinned to a version in the URL, so once cached they never need revalidating.
 const LIB = ['https://unpkg.com/leaflet@1.9.4/dist/leaflet.css', 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js'];
 const TILE_CAP = 1200;   // roughly a county at the zooms you actually read
