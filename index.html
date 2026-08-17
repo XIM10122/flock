@@ -25,8 +25,11 @@
   }
   *{box-sizing:border-box}
   html,body{height:100%;margin:0}
+  /* dvh, where it exists, so the phone's shrinking address bar doesn't crop the list */
+  @supports (height:100dvh){html,body{height:100dvh}}
   body{background:var(--wall);color:var(--ink);font:14px/1.45 var(--font);-webkit-font-smoothing:antialiased;
        display:grid;grid-template-rows:auto 1fr;overflow:hidden;padding-top:var(--sat)}
+  :focus-visible{outline:2px solid var(--red-tx);outline-offset:2px}
 
   header{display:flex;align-items:baseline;gap:12px;padding:10px 14px;border-bottom:1px solid var(--line);background:var(--card)}
   header b{font-size:16px;letter-spacing:-.01em}
@@ -40,6 +43,10 @@
   .find input{width:100%;padding:9px 11px;border-radius:8px;border:1px solid var(--line);background:var(--sink);color:var(--ink);font:inherit;min-width:0}
   .find input::placeholder{color:var(--ink3)}
   .find input:focus{outline:none;border-color:var(--ink3)}
+  /* one line under the box for lookup progress and failures, in place of alert() */
+  .status{grid-column:1/-1;font-size:12px;color:var(--ink2);min-height:0;padding:2px 2px 0}
+  .status:empty{display:none}
+  .status.bad{color:var(--red-tx)}
   button{font:inherit;color:var(--ink);background:var(--key);border:1px solid var(--line);border-radius:8px;padding:8px 11px;cursor:pointer;white-space:nowrap}
   button:hover{background:var(--chosen)}
   button.on{background:var(--chosen);font-weight:600}
@@ -67,8 +74,10 @@
   .li .d{font:11px var(--mono);color:var(--ink3);align-self:start;padding-top:2px;font-variant-numeric:tabular-nums;text-align:right}
   .li .d b{display:block;color:var(--ink2);font-weight:600}
   .li.on .d,.li.on .s,.li.on .d b{color:var(--ink)}
+  .li.kb{background:var(--key)}
   .empty{padding:24px 14px;color:var(--ink3);text-align:center}
   .empty code{color:var(--ink2)}
+  .empty button{margin-top:10px;font-size:12px;padding:6px 10px}
   .skel{height:38px;margin:6px 14px;border-radius:6px;background:linear-gradient(90deg,var(--key),var(--chosen),var(--key));background-size:200% 100%;animation:sk 1.2s linear infinite}
   @keyframes sk{to{background-position:-200% 0}}
 
@@ -96,30 +105,39 @@
   .layers button{border:0;border-radius:0;padding:6px 10px;background:var(--card);color:var(--ink2);font-size:12px}
   .layers button.on{background:var(--chosen);color:var(--ink)}
 
-  /* phone: list under a shorter map, one thumb-reach tab to swap which one has the room */
-  .tabs{display:none}
+  /* phone: list under a shorter map, both scrollable, nothing under the home bar */
   @media (max-width:760px){
-    .app{grid-template-columns:1fr;grid-template-rows:1fr auto}
+    .app{grid-template-columns:1fr;grid-template-rows:minmax(180px,1fr) auto}
     aside{border-right:0;border-top:1px solid var(--line);grid-row:2;max-height:55vh;padding-bottom:var(--sab)}
+    @supports (height:100dvh){aside{max-height:55dvh}}
     .mapwrap{grid-row:1}
     header small{display:none}
     .li{padding:11px 14px}
+    .chips{overflow-x:auto;flex-wrap:nowrap;scrollbar-width:none}
+    .chips::-webkit-scrollbar{display:none}
+    .chips .sp{display:none}
+    .layers{top:8px;right:8px}
+  }
+  @media (prefers-reduced-motion:reduce){
+    *,*::after{animation-duration:.001ms!important;transition-duration:.001ms!important}
   }
 </style>
 </head>
 <body>
 <header>
   <b>Flock</b><small>plate readers · Charleston</small>
-  <span class="n" id="count"></span>
+  <span class="n" id="count" aria-live="polite"></span>
 </header>
 <div class="app">
   <aside>
     <div class="find">
-      <input id="q" type="search" placeholder="Street, town, or an address to measure from" autocomplete="off" enterkeyhint="search">
+      <input id="q" type="search" placeholder="Street, town, or an address to measure from" autocomplete="off" enterkeyhint="search"
+             aria-label="Filter the list, or press Enter to measure distances from an address" aria-describedby="status">
       <button id="near" title="Sort by distance from where you are">Near me</button>
+      <div class="status" id="status" role="status"></div>
     </div>
     <div class="chips" id="chips"></div>
-    <div class="list" id="list"><div class="skel"></div><div class="skel"></div><div class="skel"></div></div>
+    <div class="list" id="list" role="listbox" aria-label="Plate readers"><div class="skel"></div><div class="skel"></div><div class="skel"></div></div>
   </aside>
   <div class="mapwrap">
     <div class="layers"><button data-l="map" class="on">Map</button><button data-l="sat">Satellite</button></div>
@@ -133,6 +151,22 @@
 const $ = s => document.querySelector(s);
 const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 
+// Honour the OS setting for map flights too, not just CSS animation.
+const CALM = matchMedia('(prefers-reduced-motion: reduce)');
+const fly = (latlng, zoom, secs) => CALM.matches
+  ? map.setView(latlng, zoom == null ? map.getZoom() : zoom)
+  : map.flyTo(latlng, zoom == null ? map.getZoom() : zoom, { duration: secs });
+
+// One line under the search box. Beats alert(), which a standalone PWA renders badly.
+let statusTimer = null;
+function say(msg, bad) {
+  const el = $('#status');
+  el.textContent = msg || '';
+  el.classList.toggle('bad', !!bad);
+  clearTimeout(statusTimer);
+  if (msg) statusTimer = setTimeout(() => { el.textContent = ''; el.classList.remove('bad'); }, 6000);
+}
+
 const map = L.map('map', { zoomControl: true }).setView([32.82, -79.95], 11);
 const street = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '&copy; OpenStreetMap contributors' }).addTo(map);
 const sat = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { maxZoom: 19, attribution: 'Imagery &copy; Esri' });
@@ -144,8 +178,18 @@ document.querySelectorAll('.layers button').forEach(b => b.onclick = () => {
 });
 
 let CAMS = [], MARK = {}, CONE = {}, CUR = null;
+let BYID = new Map();                             // id -> camera, so lookups aren't a scan
+let ROWS = [];                                    // what the list is showing, in order
+let KB = -1;                                      // arrow-key position within ROWS
+let ARROWED = false;                              // true only while arrow keys are steering
 let HOME = null, HOMEMARK = null, RING = null;   // where distances are measured from
 let OP = 'all';                                   // operator chip
+let SHOWN = null;                                 // the operator the map layers currently reflect
+
+// Wedges are smaller than a pixel when the whole county is on screen. Draw them
+// only once the map is close enough for them to mean something.
+const CONE_ZOOM = 14;
+let conesOn = false;
 
 // "0;182" is two readers on one pole facing both ways: one tick per direction
 const dirs = d => String(d ?? '').split(';').map(s => s.trim()).filter(s => s !== '' && !isNaN(+s)).map(Number);
@@ -203,7 +247,7 @@ function setHome(lat, lon, name) {
   HOMEMARK = L.marker([lat, lon], { icon: L.divIcon({ className: '', iconSize: [18, 18], iconAnchor: [9, 9], html: '<div class="me"></div>' }), title: name, zIndexOffset: 1000 }).addTo(map);
   RING = L.circle([lat, lon], { radius: 1609.34, color: '#63b3ff', weight: 1, opacity: .5, fillOpacity: .04, interactive: false }).addTo(map);
   for (const c of CAMS) MARK[c.id].setPopupContent(popupHtml(c));
-  map.flyTo([lat, lon], 13, { duration: .7 });
+  fly([lat, lon], 13, .7);
   render($('#q').value);
 }
 function clearHome() {
@@ -216,14 +260,15 @@ function clearHome() {
 
 $('#near').onclick = () => {
   const b = $('#near');
-  if (!navigator.geolocation) return alert('This browser cannot share location.');
-  b.classList.add('busy'); b.disabled = true;
+  if (!navigator.geolocation) return say('This browser cannot share a location. Type an address instead.', true);
+  b.classList.add('busy'); b.disabled = true; say('Finding you…');
   navigator.geolocation.getCurrentPosition(p => {
-    b.classList.remove('busy'); b.disabled = false;
+    b.classList.remove('busy'); b.disabled = false; say('');
     setHome(p.coords.latitude, p.coords.longitude, 'you');
   }, err => {
     b.classList.remove('busy'); b.disabled = false;
-    alert(err.code === 1 ? 'Location was refused. Allow it in the browser and try again, or type an address instead.' : 'Could not get a location. Type an address instead.');
+    say(err.code === 1 ? 'Location was refused. Allow it in the browser, or type an address instead.'
+                       : 'Could not get a location. Type an address instead.', true);
   }, { enableHighAccuracy: true, timeout: 12000, maximumAge: 60000 });
 };
 
@@ -235,16 +280,34 @@ async function geocode(q) {
   const j = await r.json();
   return j[0] ? { lat: +j[0].lat, lon: +j[0].lon, name: (j[0].display_name || q).split(',').slice(0, 2).join(',') } : null;
 }
-$('#q').addEventListener('input', e => render(e.target.value));
+// Typing filters live, but one frame behind the keystroke so a fast typist isn't
+// waiting on 200 rows being laid out between letters.
+let typeTimer = null;
+$('#q').addEventListener('input', e => {
+  const v = e.target.value;
+  clearTimeout(typeTimer);
+  typeTimer = setTimeout(() => render(v), 90);
+});
 $('#q').addEventListener('keydown', async e => {
+  if (e.key === 'ArrowDown') { e.preventDefault(); return step(1); }
+  if (e.key === 'ArrowUp') { e.preventDefault(); return step(-1); }
+  if (e.key === 'Escape') {
+    e.preventDefault();
+    if (e.target.value) { e.target.value = ''; render(''); }
+    else if (HOME) clearHome();
+    else if (OP !== 'all') resetFilters();
+    return;
+  }
   if (e.key !== 'Enter') return;
+  // Arrowing to a row makes Enter mean "this one", not "look this address up".
+  if (ARROWED && KB >= 0 && ROWS[KB]) { e.preventDefault(); return select(ROWS[KB].id, true); }
   const q = e.target.value.trim(); if (!q) return;
-  e.target.disabled = true;
+  e.target.disabled = true; say('Looking up “' + q + '”…');
   try {
     const hit = await geocode(q);
-    if (hit) { e.target.value = ''; setHome(hit.lat, hit.lon, hit.name); }
-    else alert('Could not find “' + q + '”. Try a street and town.');
-  } catch (err) { alert('Address lookup failed — is there internet?'); }
+    if (hit) { e.target.value = ''; say(''); setHome(hit.lat, hit.lon, hit.name); }
+    else say('Could not find “' + q + '”. Try a street and a town.', true);
+  } catch (err) { say('Address lookup failed — no internet, or the lookup service is busy.', true); }
   e.target.disabled = false; e.target.focus();
 });
 
@@ -270,37 +333,86 @@ function opKey(c) {
 }
 const opMatch = c => OP === 'all' || opKey(c) === OP;
 
-function select(id, fly) {
-  if (CUR && MARK[CUR]) MARK[CUR].setIcon(pinIcon(byId(CUR).direction, false));
+// Markers follow the chips so the filter means something on the map too; wedges
+// additionally wait for zoom. Both only touch the map when something actually changed.
+function syncLayers() {
+  const wantCones = map.getZoom() >= CONE_ZOOM;
+  const opChanged = SHOWN !== OP;
+  if (!opChanged && wantCones === conesOn) return;
+  for (const c of CAMS) {
+    const on = opMatch(c);
+    if (opChanged) {
+      if (on && !map.hasLayer(MARK[c.id])) MARK[c.id].addTo(map);
+      else if (!on && map.hasLayer(MARK[c.id])) map.removeLayer(MARK[c.id]);
+    }
+    const wantCone = on && wantCones;
+    if (wantCone && !map.hasLayer(CONE[c.id])) CONE[c.id].addTo(map);
+    else if (!wantCone && map.hasLayer(CONE[c.id])) map.removeLayer(CONE[c.id]);
+  }
+  SHOWN = OP; conesOn = wantCones;
+}
+map.on('zoomend', syncLayers);
+
+function select(id, move) {
+  const prev = byId(CUR);
+  if (prev && MARK[CUR]) MARK[CUR].setIcon(pinIcon(prev.direction, false));
   CUR = id;
   const c = byId(id), m = MARK[id];
   if (!c || !m) return;
   m.setIcon(pinIcon(c.direction, true));
-  if (fly) map.flyTo([c.lat, c.lon], Math.max(map.getZoom(), 17), { duration: .6 });
+  if (move) fly([c.lat, c.lon], Math.max(map.getZoom(), 17), .6);
   m.openPopup();
-  document.querySelectorAll('.li').forEach(el => {
-    const on = el.dataset.id === id; el.classList.toggle('on', on);
+  KB = ROWS.findIndex(r => r.id === id);
+  markRows();
+}
+const byId = id => BYID.get(id) || null;
+
+// Only the two rows whose state changed are touched, not all 200.
+function markRows() {
+  $('#list').querySelectorAll('.li').forEach(el => {
+    const on = el.dataset.id === CUR;
+    el.classList.toggle('on', on);
+    el.setAttribute('aria-selected', on ? 'true' : 'false');
+    el.classList.toggle('kb', ARROWED && KB >= 0 && !!ROWS[KB] && el.dataset.id === ROWS[KB].id);
     if (on) el.scrollIntoView({ block: 'nearest' });
   });
 }
-const byId = id => CAMS.find(c => c.id === id);
+
+// Arrow keys walk the list from the search box; Escape backs out one step at a time.
+function step(n) {
+  if (!ROWS.length) return;
+  KB = KB < 0 ? (n > 0 ? 0 : ROWS.length - 1) : Math.min(ROWS.length - 1, Math.max(0, KB + n));
+  ARROWED = true;
+  select(ROWS[KB].id, true);
+}
 
 function render(q) {
   const list = $('#list');
   q = (q || '').trim().toLowerCase();
-  let rows = CAMS.filter(c => opMatch(c) && (!q || (c.label + ' ' + c.operator + ' ' + c.postcode).toLowerCase().includes(q)));
+  // c.find is built once at boot from the fields that exist, so a missing operator
+  // can no longer put the literal word "undefined" into the haystack.
+  let rows = CAMS.filter(c => opMatch(c) && (!q || c.find.includes(q)));
   if (HOME) rows = rows.slice().sort((a, b) => milesTo(a) - milesTo(b));
-  // markers on the map follow the same filter, so the chips mean something there too
-  for (const c of CAMS) {
-    const on = opMatch(c);
-    if (on && !map.hasLayer(MARK[c.id])) { MARK[c.id].addTo(map); CONE[c.id].addTo(map); }
-    if (!on && map.hasLayer(MARK[c.id])) { map.removeLayer(MARK[c.id]); map.removeLayer(CONE[c.id]); }
-  }
+  syncLayers();
+
   const nl = $('#nearlab');
-  if (nl) nl.innerHTML = HOME ? `from <b>${esc(HOME.name)}</b><a title="Stop measuring" id="clearhome">✕</a>` : '';
+  if (nl) nl.innerHTML = HOME ? `from <b>${esc(HOME.name)}</b><a title="Stop measuring" id="clearhome" role="button" tabindex="0">✕</a>` : '';
   if (nl && HOME) $('#clearhome').onclick = clearHome;
 
-  if (!rows.length) { list.innerHTML = `<div class="empty">Nothing matches.</div>`; $('#count').textContent = '0 of ' + CAMS.length; return; }
+  ROWS = rows;
+  KB = CUR ? rows.findIndex(r => r.id === CUR) : -1;
+  ARROWED = false;   // the list moved under it; Enter goes back to meaning "look this address up"
+  $('#count').textContent = (rows.length !== CAMS.length ? rows.length + ' of ' : '') + CAMS.length + ' cameras';
+
+  if (!rows.length) {
+    const why = q && OP !== 'all' ? `Nothing matches “${esc(q)}” under ${esc(OP)}.`
+              : q ? `Nothing matches “${esc(q)}”.`
+              : `No cameras under ${esc(OP)}.`;
+    list.innerHTML = `<div class="empty">${why}<br><button id="resetf">Clear the filters</button></div>`;
+    $('#resetf').onclick = resetFilters;
+    return;
+  }
+
   let town = null, html = '';
   for (const c of rows) {
     if (!HOME) {
@@ -308,26 +420,41 @@ function render(q) {
       if (t !== town) { town = t; html += `<div class="town">${esc(t)}</div>`; }
     }
     const d = HOME ? `<b>${fmtMi(milesTo(c))}</b>${esc(dirText(c.direction))}` : esc(dirText(c.direction));
-    html += `<div class="li${c.id === CUR ? ' on' : ''}" data-id="${c.id}">
+    html += `<div class="li${c.id === CUR ? ' on' : ''}" data-id="${c.id}" role="option" aria-selected="${c.id === CUR}">
       <span class="a">${esc(c.label)}</span>
       <span class="d">${d}</span>
       ${c.operator ? `<span class="s">${esc(c.operator)}</span>` : ''}
     </div>`;
   }
   list.innerHTML = html;
-  list.querySelectorAll('.li').forEach(el => el.onclick = () => select(el.dataset.id, true));
-  $('#count').textContent = (rows.length !== CAMS.length ? rows.length + ' of ' : '') + CAMS.length + ' cameras';
+}
+
+// One click handler on the container, attached once — not 200 rebuilt per keystroke.
+$('#list').addEventListener('click', e => {
+  const el = e.target.closest('.li');
+  if (el) { ARROWED = false; select(el.dataset.id, true); }
+});
+
+function resetFilters() {
+  OP = 'all';
+  $('#q').value = '';
+  $('#chips').querySelectorAll('button').forEach(x => x.classList.toggle('on', x.dataset.op === 'all'));
+  render('');
+  $('#q').focus();
 }
 
 // The data is baked into this file so it opens with no server and no signal (see flock.publish.py).
 // On the Mission Control copy it is fetched instead, so a rebuild shows up on reload.
 function boot(d) {
   CAMS = d.cameras || [];
+  BYID = new Map(CAMS.map(c => [c.id, c]));
   const group = L.featureGroup();
   for (const c of CAMS) {
+    // one lowercase haystack per camera, built from the fields that exist
+    c.find = [c.label, c.operator, c.postcode, c.city, c.road].filter(Boolean).join(' ').toLowerCase();
     const m = L.marker([c.lat, c.lon], { icon: pinIcon(c.direction, false), title: c.label }).bindPopup(popupHtml(c)).on('click', () => select(c.id, false));
     MARK[c.id] = m; group.addLayer(m);
-    CONE[c.id] = coneFor(c).addTo(map);
+    CONE[c.id] = coneFor(c);          // added to the map by syncLayers, once the zoom warrants it
   }
   group.addTo(map);
   if (CAMS.length) map.fitBounds(group.getBounds().pad(.05));
