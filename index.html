@@ -50,12 +50,14 @@
   .app{display:grid;grid-template-columns:minmax(300px,380px) 1fr;min-height:0}
   aside{display:grid;grid-template-rows:auto auto auto 1fr;min-height:0;border-right:1px solid var(--line);background:var(--card)}
 
-  .find{display:grid;grid-template-columns:1fr auto;gap:6px;padding:10px 12px 6px}
+  .find{display:flex;flex-wrap:wrap;align-items:center;gap:6px;padding:10px 12px 6px}
+  .find input{flex:1 1 auto}
+  .find #near{flex:none}
   .find input{width:100%;padding:10px 12px;border-radius:var(--r);border:1px solid var(--line);background:var(--sink);color:var(--ink);font:inherit;min-width:0;box-shadow:inset 0 1px 2px rgba(0,0,0,.35);transition:border-color .15s,box-shadow .15s}
   .find input::placeholder{color:var(--ink3)}
   .find input:focus{outline:none;border-color:var(--amber);box-shadow:inset 0 1px 2px rgba(0,0,0,.35),0 0 0 3px var(--amber-dim)}
   /* one line under the box for lookup progress and failures, in place of alert() */
-  .status{grid-column:1/-1;font-size:12px;color:var(--ink2);min-height:0;padding:2px 2px 0}
+  .status{flex-basis:100%;font-size:12px;color:var(--ink2);min-height:0;padding:2px 2px 0}
   .status:empty{display:none}
   .status.bad{color:var(--red-tx)}
   .status:not(.bad){color:var(--amber-tx)}
@@ -222,6 +224,8 @@
     .app.grown{grid-template-rows:minmax(96px,1fr) auto}
     .app.grown aside{max-height:74vh}
     @supports (height:100dvh){.app.grown aside{max-height:74dvh}}
+    /* The address box gives up its slack so Near me sits well inside the screen. */
+    .find input{flex:0 1 58%}
     .locate{bottom:12px;right:8px}
     .plan{bottom:64px;right:8px}
     .routes{left:8px;right:60px;bottom:8px;padding:7px}
@@ -323,6 +327,7 @@ const DICT = {
     '{n} cameras': '{n} câmeras',
     '{a} of {b} cameras': '{a} de {b} câmeras',
     'Street, town, or an address to measure from': 'Rua, cidade ou endereço de onde medir',
+    'Street, town, or address': 'Rua, cidade ou endereço',
     'Filter the list, or press Enter to measure distances from an address': 'Filtre a lista, ou pressione Enter para medir distâncias a partir de um endereço',
     'Near me': 'Perto de mim',
     'Following': 'Seguindo',
@@ -411,6 +416,7 @@ const DICT = {
     '{n} cameras': '{n} cámaras',
     '{a} of {b} cameras': '{a} de {b} cámaras',
     'Street, town, or an address to measure from': 'Calle, ciudad o dirección desde donde medir',
+    'Street, town, or address': 'Calle, ciudad o dirección',
     'Filter the list, or press Enter to measure distances from an address': 'Filtra la lista, o pulsa Enter para medir distancias desde una dirección',
     'Near me': 'Cerca de mí',
     'Following': 'Siguiendo',
@@ -506,6 +512,7 @@ function T(s, vars) {
 // no animation frames, so a link opened in the background would otherwise never arrive:
 // jump there instead, and it is already in place when the tab is looked at.
 const CALM = matchMedia('(prefers-reduced-motion: reduce)');
+const PHONE = matchMedia('(max-width:760px)');
 const fly = (latlng, zoom, secs) => {
   const z = zoom == null ? map.getZoom() : zoom;
   return (CALM.matches || document.hidden)
@@ -1025,7 +1032,8 @@ function applyLang() {
   $('#install').textContent = T('Save to phone');
   if (BUILT) $('#built').textContent = T('as of {d}', { d: BUILT });
   const q = $('#q');
-  q.placeholder = T('Street, town, or an address to measure from');
+  q.placeholder = PHONE.matches ? T('Street, town, or address')
+                                : T('Street, town, or an address to measure from');
   q.setAttribute('aria-label', T('Filter the list, or press Enter to measure distances from an address'));
   $('#near').title = T('Sort by distance from where you are');
   $('#list').setAttribute('aria-label', T('Plate readers'));
@@ -1284,7 +1292,6 @@ map.on('click', e => {
 
 // Phone only: scrolling the list is a statement that the list is what is wanted, so it takes
 // the room and the map drops to about half. Back at the top, the map comes back up.
-const PHONE = matchMedia('(max-width:760px)');
 (() => {
   const app = document.querySelector('.app'), list = $('#list');
   let queued = false;
@@ -1298,7 +1305,7 @@ const PHONE = matchMedia('(max-width:760px)');
     if (want !== grown) { app.classList.toggle('grown', want); settle(); }
   };
   list.addEventListener('scroll', () => { if (!queued) { queued = true; requestAnimationFrame(apply); } }, { passive: true });
-  PHONE.addEventListener('change', apply);
+  PHONE.addEventListener('change', () => { apply(); applyLang(); });
 })();
 
 // Keeping a saved copy current.
