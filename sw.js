@@ -1,4 +1,4 @@
-const V = 'flock-202608170751-089fa14c';
+const V = 'flock-202608170751-69b69ae8';
 const CORE = ['./', './index.html', './manifest.webmanifest', './icon-192.png', './icon-512.png', './icon.svg'];
 // Pinned to a version in the URL, so once cached they never need revalidating.
 const LIB = ['https://unpkg.com/leaflet@1.9.4/dist/leaflet.css', 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js'];
