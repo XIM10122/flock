@@ -30,7 +30,7 @@
     --mono:ui-monospace,"Cascadia Mono",Consolas,Menlo,monospace;
     --sat:env(safe-area-inset-top,0px); --sab:env(safe-area-inset-bottom,0px);
   }
-  *{box-sizing:border-box}
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
   html,body{height:100%;margin:0}
   /* dvh, where it exists, so the phone's shrinking address bar doesn't crop the list */
   @supports (height:100dvh){html,body{height:100dvh}}
@@ -48,11 +48,14 @@
   header #lang:hover{color:var(--ink)}
 
   .app{display:grid;grid-template-columns:minmax(300px,380px) 1fr;min-height:0}
-  aside{display:grid;grid-template-rows:auto auto auto 1fr;min-height:0;border-right:1px solid var(--line);background:var(--card)}
+  .grip{display:none}
+  aside{display:grid;grid-template-rows:auto auto auto auto 1fr;min-height:0;border-right:1px solid var(--line);background:var(--card)}
 
   .find{display:flex;flex-wrap:wrap;align-items:center;gap:6px;padding:10px 12px 6px}
   .find input{flex:1 1 auto}
-  .find #near{flex:none}
+  .find #near,.find #units{flex:none}
+  .find #units{font:12px var(--mono);color:var(--ink2);padding:9px 8px;min-width:38px}
+  .find #units:hover{color:var(--ink)}
   .find input{width:100%;padding:10px 12px;border-radius:var(--r);border:1px solid var(--line);background:var(--sink);color:var(--ink);font:inherit;min-width:0;box-shadow:inset 0 1px 2px rgba(0,0,0,.35);transition:border-color .15s,box-shadow .15s}
   .find input::placeholder{color:var(--ink3)}
   .find input:focus{outline:none;border-color:var(--amber);box-shadow:inset 0 1px 2px rgba(0,0,0,.35),0 0 0 3px var(--amber-dim)}
@@ -98,7 +101,7 @@
   .tiplist a:hover{text-decoration:underline}
   .tiplist li.law{color:var(--red-tx)}
 
-  .list{overflow:auto;padding:6px 0;scrollbar-width:thin;scrollbar-color:var(--key) transparent;-webkit-overflow-scrolling:touch}
+  .list{overflow:auto;overscroll-behavior:contain;padding:6px 0;scrollbar-width:thin;scrollbar-color:var(--key) transparent;-webkit-overflow-scrolling:touch}
   .town{position:sticky;top:0;z-index:1;padding:8px 14px 4px;font:600 10.5px/1 var(--mono);letter-spacing:.14em;text-transform:uppercase;color:var(--ink3);background:var(--card)}
   .li{display:grid;grid-template-columns:1fr auto;gap:2px 10px;padding:10px 14px;cursor:pointer;border-left:2px solid transparent;transition:background .12s}
   .li:hover{background:var(--key)}
@@ -216,6 +219,11 @@
   /* phone: list under a shorter map, both scrollable, nothing under the home bar */
   @media (max-width:760px){
     .app{grid-template-columns:1fr;grid-template-rows:minmax(180px,1fr) auto}
+    /* The bar you can grab: tap it to swap between half and tall, drag it to anywhere. */
+    .grip{display:block;width:100%;padding:7px 0 3px;background:transparent;border:0;box-shadow:none;
+          border-radius:0;cursor:grab;touch-action:none}
+    .grip span{display:block;width:38px;height:4px;margin:0 auto;border-radius:999px;background:var(--line2)}
+    .grip:hover span{background:var(--ink3)}
     aside{border-right:0;border-top:1px solid var(--line);grid-row:2;max-height:55vh;padding-bottom:var(--sab);
           transition:max-height .3s cubic-bezier(.2,.7,.3,1)}
     @supports (height:100dvh){aside{max-height:55dvh}}
@@ -231,8 +239,15 @@
     .routes{left:8px;right:60px;bottom:8px;padding:7px}
     .mapwrap{grid-row:1}
     header small:not(.built){display:none}   /* the strapline goes; how old the data is stays */
-    header{gap:8px;padding:10px 12px}
-    .li{padding:11px 14px}
+    header{gap:6px;padding:10px 10px}
+    header #lang{padding:5px 4px}
+    /* The chips already say "All 200", so the header total is the first thing to go. */
+    @media (max-width:480px){ header .n{display:none} }
+    .li{padding:13px 14px;min-height:44px;align-content:center}
+    .chips button{padding:8px 12px;min-height:36px}
+    .tipbar button{min-width:34px;min-height:34px}
+    .find input{padding:12px}
+    #near{min-height:44px}
     .chips{overflow-x:auto;flex-wrap:nowrap;scrollbar-width:none}
     .chips::-webkit-scrollbar{display:none}
     .chips .sp{display:none}
@@ -258,8 +273,10 @@
       <input id="q" type="search" placeholder="Street, town, or an address to measure from" autocomplete="off" enterkeyhint="search"
              aria-label="Filter the list, or press Enter to measure distances from an address" aria-describedby="status">
       <button id="near" title="Sort by distance from where you are">Near me</button>
+      <button id="units" title="Miles or kilometres">mi</button>
       <div class="status" id="status" role="status"></div>
     </div>
+    <button class="grip" id="grip" aria-label="Make the list taller or shorter"><span></span></button>
     <div class="chips" id="chips"></div>
     <div class="tipbar" id="tipbar">
       <svg class="bulb" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -324,6 +341,7 @@ const DICT = {
     'plate readers · Charleston': 'leitores de placas · Charleston',
     'as of {d}': 'de {d}',
     'Save to phone': 'Salvar no celular',
+    'Save': 'Salvar',
     '{n} cameras': '{n} câmeras',
     '{a} of {b} cameras': '{a} de {b} câmeras',
     'Street, town, or an address to measure from': 'Rua, cidade ou endereço de onde medir',
@@ -332,6 +350,8 @@ const DICT = {
     'Near me': 'Perto de mim',
     'Following': 'Seguindo',
     'Sort by distance from where you are': 'Ordenar pela distância de onde você está',
+    'Miles or kilometres': 'Milhas ou quilômetros',
+    'Make the list taller or shorter': 'Deixar a lista maior ou menor',
     'Show where you are': 'Mostrar onde você está',
     'Following you — tap to stop': 'Seguindo você — toque para parar',
     'Back to where you are': 'Voltar para onde você está',
@@ -413,6 +433,7 @@ const DICT = {
     'plate readers · Charleston': 'lectores de matrículas · Charleston',
     'as of {d}': 'al {d}',
     'Save to phone': 'Guardar en el móvil',
+    'Save': 'Guardar',
     '{n} cameras': '{n} cámaras',
     '{a} of {b} cameras': '{a} de {b} cámaras',
     'Street, town, or an address to measure from': 'Calle, ciudad o dirección desde donde medir',
@@ -421,6 +442,8 @@ const DICT = {
     'Near me': 'Cerca de mí',
     'Following': 'Siguiendo',
     'Sort by distance from where you are': 'Ordenar por distancia desde donde estás',
+    'Miles or kilometres': 'Millas o kilómetros',
+    'Make the list taller or shorter': 'Hacer la lista más alta o más baja',
     'Show where you are': 'Mostrar dónde estás',
     'Following you — tap to stop': 'Siguiéndote — toca para parar',
     'Back to where you are': 'Volver a donde estás',
@@ -530,7 +553,10 @@ function say(msg, bad) {
   if (msg) statusTimer = setTimeout(() => { el.textContent = ''; el.classList.remove('bad'); }, 6000);
 }
 
-const map = L.map('map', { zoomControl: true }).setView([32.82, -79.95], 10);
+// preferCanvas: the cones and density discs become one canvas rather than hundreds of
+// SVG nodes, which is the difference between smooth and juddering panning on a phone.
+const map = L.map('map', { zoomControl: true, preferCanvas: true })
+  .setView([32.82, -79.95], 10);
 const street = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '&copy; OpenStreetMap contributors' }).addTo(map);
 const sat = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { maxZoom: 19, attribution: 'Imagery &copy; Esri' });
 document.querySelectorAll('.layers button').forEach(b => b.onclick = () => {
@@ -605,7 +631,17 @@ map.on('popupopen', e => {
     };
   };
   const a = el.querySelector('[data-copy]'); if (a) copy(a, a.dataset.copy);
-  const s = el.querySelector('[data-share]'); if (s) copy(s, linkTo(s.dataset.share));
+  const s = el.querySelector('[data-share]');
+  if (s) {
+    // A phone has a share sheet, and it beats a silent clipboard write every time.
+    if (navigator.share) s.onclick = async ev => {
+      ev.preventDefault();
+      const c = BYID.get(s.dataset.share);
+      try { await navigator.share({ title: 'Flock', text: c ? c.label : 'Flock', url: linkTo(s.dataset.share) }); }
+      catch (err) { /* they closed the sheet; nothing to report */ }
+    };
+    else copy(s, linkTo(s.dataset.share));
+  }
 });
 
 // A reader that isn't on the map: press and hold where it is (right-click on a desk),
@@ -626,7 +662,16 @@ function haversine(a, b, c, d) {
   const h = Math.sin(dl / 2) ** 2 + Math.cos(r(a)) * Math.cos(r(c)) * Math.sin(dg / 2) ** 2;
   return 2 * R * Math.asin(Math.sqrt(h));
 }
-const fmtMi = m => m < .1 ? Math.round(m * 5280) + ' ft' : m.toFixed(m < 10 ? 1 : 0) + ' mi';
+// Everything is computed in miles; this is the only place that decides how to say it.
+let UNITS = 'mi';
+try { UNITS = localStorage.getItem('flock.units') === 'km' ? 'km' : 'mi'; } catch (e) {}
+const fmtMi = m => {
+  if (UNITS === 'km') {
+    const k = m * 1.609344;
+    return k < .1 ? Math.round(k * 1000) + ' m' : k.toFixed(k < 10 ? 1 : 0) + ' km';
+  }
+  return m < .1 ? Math.round(m * 5280) + ' ft' : m.toFixed(m < 10 ? 1 : 0) + ' mi';
+};
 
 // The "me" mark carries a heading arrow. Leaflet can't rotate the whole map, and rotating
 // a map in a moving car is worse than a fixed north-up with an arrow anyway.
@@ -685,7 +730,18 @@ function paintWatch(busy) {
           : FOLLOW ? T('Following you — tap to stop') : T('Back to where you are');
   l.title = t; l.setAttribute('aria-label', t);
 }
+// A phone that locks its screen mid-run is no use as a map. The lock is released again
+// the moment following stops, and the browser drops it by itself on a hidden tab.
+let WAKE = null;
+async function keepAwake(on) {
+  try {
+    if (on && !WAKE && navigator.wakeLock) WAKE = await navigator.wakeLock.request('screen');
+    else if (!on && WAKE) { await WAKE.release(); WAKE = null; }
+  } catch (e) { WAKE = null; }
+}
+addEventListener('visibilitychange', () => { if (!document.hidden && FOLLOW) keepAwake(true); });
 function stopWatch() {
+  keepAwake(false);
   if (WATCH != null) navigator.geolocation.clearWatch(WATCH);
   WATCH = null; FOLLOW = false;
   paintWatch();
@@ -696,7 +752,7 @@ function startWatch() {
   paintWatch(true); say(T('Finding you…'));
   let first = true;
   WATCH = navigator.geolocation.watchPosition(p => {
-    if (first) { FOLLOW = true; say(''); paintWatch(); }
+    if (first) { FOLLOW = true; say(''); paintWatch(); keepAwake(true); }
     setHeading(p.coords.heading);   // null when standing still; the arrow hides itself
     setHome(p.coords.latitude, p.coords.longitude, 'you', { quiet: !first });
     first = false;
@@ -1029,13 +1085,17 @@ addEventListener('appinstalled', () => { $('#install').hidden = true; sheet.clos
 function applyLang() {
   document.documentElement.lang = LANG;
   $('#tagline').textContent = T('plate readers · Charleston');
-  $('#install').textContent = T('Save to phone');
+  $('#install').textContent = PHONE.matches ? T('Save') : T('Save to phone');
+  paintLangOptions();
   if (BUILT) $('#built').textContent = T('as of {d}', { d: BUILT });
   const q = $('#q');
   q.placeholder = PHONE.matches ? T('Street, town, or address')
                                 : T('Street, town, or an address to measure from');
   q.setAttribute('aria-label', T('Filter the list, or press Enter to measure distances from an address'));
   $('#near').title = T('Sort by distance from where you are');
+  $('#units').textContent = UNITS;
+  $('#units').title = T('Miles or kilometres');
+  $('#grip').setAttribute('aria-label', T('Make the list taller or shorter'));
   $('#list').setAttribute('aria-label', T('Plate readers'));
   document.querySelectorAll('.layers button').forEach(b => b.textContent = T(b.dataset.l === 'map' ? 'Map' : 'Satellite'));
   const p = $('#plan');
@@ -1054,8 +1114,14 @@ function applyLang() {
   if (ROUTED.length) drawRoutes();
   if (typeof paintTip === 'function') paintTip();
 }
-$('#lang').innerHTML = Object.entries(LANGS).map(([k, v]) => `<option value="${k}">${esc(v)}</option>`).join('');
-$('#lang').value = LANG;
+function paintLangOptions() {
+  // A phone header cannot spare 87px for the word "Português"; the code says the same thing.
+  const short = PHONE.matches;
+  $('#lang').innerHTML = Object.entries(LANGS)
+    .map(([k, v]) => `<option value="${k}">${esc(short ? k.toUpperCase() : v)}</option>`).join('');
+  $('#lang').value = LANG;
+}
+paintLangOptions();
 $('#lang').onchange = e => {
   LANG = e.target.value;
   try { localStorage.setItem('flock.lang', LANG); } catch (err) {}
@@ -1063,6 +1129,59 @@ $('#lang').onchange = e => {
 };
 addEventListener('load', applyLang);
 
+
+
+// ---------------------------------------------------------------- units
+$('#units').onclick = () => {
+  UNITS = UNITS === 'mi' ? 'km' : 'mi';
+  try { localStorage.setItem('flock.units', UNITS); } catch (e) {}
+  $('#units').textContent = UNITS;
+  map.closePopup();
+  render($('#q').value);
+};
+
+// ---------------------------------------------------------------- the grab handle
+// Scrolling already swaps between half and tall. This is the same thing under a thumb:
+// tap to toggle, or drag to put the split exactly where you want it.
+(() => {
+  const app = document.querySelector('.app'), aside = document.querySelector('aside'), grip = $('#grip');
+  let dragging = false, startY = 0, startH = 0, moved = 0;
+  const vh = () => innerHeight || document.documentElement.clientHeight;
+  const settle = () => setTimeout(() => map.invalidateSize({ pan: false }), 60);
+
+  grip.addEventListener('pointerdown', e => {
+    if (!PHONE.matches) return;
+    dragging = true; moved = 0;
+    startY = e.clientY; startH = aside.getBoundingClientRect().height;
+    try { grip.setPointerCapture(e.pointerId); } catch (err) { /* nothing to capture */ }
+    // While a finger owns the split, the animated max-height would fight it.
+    aside.style.transition = 'none';
+  });
+  grip.addEventListener('pointermove', e => {
+    if (!dragging) return;
+    const dy = startY - e.clientY;
+    moved = Math.max(moved, Math.abs(dy));
+    const h = Math.min(vh() * 0.86, Math.max(vh() * 0.22, startH + dy));
+    aside.style.maxHeight = h + 'px';
+    map.invalidateSize({ pan: false });
+  });
+  const end = e => {
+    if (!dragging) return;
+    dragging = false;
+    aside.style.transition = '';
+    if (moved < 6) {                       // a tap, not a drag
+      aside.style.maxHeight = '';
+      app.classList.toggle('grown');
+      settle();
+    }
+  };
+  grip.addEventListener('pointerup', end);
+  grip.addEventListener('pointercancel', end);
+  // A hand-placed split outranks the scroll rule until the list goes back to the top.
+  $('#list').addEventListener('scroll', () => {
+    if (!dragging && aside.style.maxHeight && $('#list').scrollTop <= 8) { aside.style.maxHeight = ''; settle(); }
+  }, { passive: true });
+})();
 
 // ---------------------------------------------------------------- tips
 // What people around these cameras actually do about them, drawn from reporting, court
