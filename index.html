@@ -42,10 +42,13 @@
   header .mark{width:30px;height:30px;flex:none;color:var(--ink);border-radius:50%;box-shadow:0 0 0 1px var(--line2),0 0 18px -4px var(--amber-dim)}
   header b{font-size:16px;letter-spacing:-.01em}
   header small{color:var(--ink3);font-size:11px;letter-spacing:.14em;text-transform:uppercase}
-  header .n{margin-left:auto;font:12px var(--mono);color:var(--ink2);font-variant-numeric:tabular-nums;white-space:nowrap}
+  header .n{font:12px var(--mono);color:var(--ink2);font-variant-numeric:tabular-nums;white-space:nowrap}
+  header #lang{margin-left:auto;font:inherit;font-size:12px;color:var(--ink2);background:var(--key);border:1px solid var(--line);
+               border-radius:var(--r-s);padding:5px 6px;cursor:pointer}
+  header #lang:hover{color:var(--ink)}
 
   .app{display:grid;grid-template-columns:minmax(300px,380px) 1fr;min-height:0}
-  aside{display:grid;grid-template-rows:auto auto 1fr;min-height:0;border-right:1px solid var(--line);background:var(--card)}
+  aside{display:grid;grid-template-rows:auto auto auto 1fr;min-height:0;border-right:1px solid var(--line);background:var(--card)}
 
   .find{display:grid;grid-template-columns:1fr auto;gap:6px;padding:10px 12px 6px}
   .find input{width:100%;padding:10px 12px;border-radius:var(--r);border:1px solid var(--line);background:var(--sink);color:var(--ink);font:inherit;min-width:0;box-shadow:inset 0 1px 2px rgba(0,0,0,.35);transition:border-color .15s,box-shadow .15s}
@@ -74,6 +77,24 @@
   .chips .near b{color:var(--ink);font-weight:600}
   .chips .near a{color:var(--ink3);text-decoration:none;margin-left:6px;cursor:pointer}
   .chips .near a:hover{color:var(--ink)}
+
+  /* Tip bar: what people actually do about these, one line at a time. */
+  .tipbar{display:grid;grid-template-columns:auto 1fr auto auto;align-items:center;gap:8px;padding:8px 12px;
+          border-bottom:1px solid var(--line);background:var(--sink)}
+  .tipbar[hidden]{display:none}
+  .tipbar .bulb{width:16px;height:16px;color:var(--amber-tx);flex:none}
+  .tipbar p{margin:0;font-size:12px;color:var(--ink2);cursor:pointer;
+            display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+  .tipbar p:hover{color:var(--ink)}
+  .tipbar .nav{display:flex;gap:2px}
+  .tipbar button{padding:2px 7px;font-size:12px;background:transparent;border:0;box-shadow:none;color:var(--ink3);border-radius:var(--r-s)}
+  .tipbar button:hover{background:var(--key);color:var(--ink)}
+  .tiplist{display:grid;gap:0;padding:0 16px 8px}
+  .tiplist li{list-style:none;padding:11px 0;border-top:1px solid var(--line);font-size:13px;color:var(--ink)}
+  .tiplist li:first-child{border-top:0}
+  .tiplist a{color:var(--amber-tx);text-decoration:none;font-size:11.5px;display:inline-block;margin-top:3px}
+  .tiplist a:hover{text-decoration:underline}
+  .tiplist li.law{color:var(--red-tx)}
 
   .list{overflow:auto;padding:6px 0;scrollbar-width:thin;scrollbar-color:var(--key) transparent;-webkit-overflow-scrolling:touch}
   .town{position:sticky;top:0;z-index:1;padding:8px 14px 4px;font:600 10.5px/1 var(--mono);letter-spacing:.14em;text-transform:uppercase;color:var(--ink3);background:var(--card)}
@@ -147,6 +168,45 @@
   .sheet-f{padding:0 16px 16px;font-size:12px;color:var(--ink3)}
   .sheet-f button{width:100%;margin-bottom:10px;font-size:13px;padding:10px}
 
+  /* Where-am-I, on the map itself. The list has "Near me", but that is off screen once the
+     list is scrolled, and this is where a hand already is on a phone. */
+  .locate{position:absolute;right:10px;bottom:22px;z-index:500;width:42px;height:42px;padding:0;
+          display:grid;place-items:center;border-radius:50%;background:var(--card);color:var(--ink2);box-shadow:var(--lift)}
+  .locate svg{width:20px;height:20px}
+  .locate:hover{background:var(--chosen);color:var(--ink)}
+  .locate.held{color:var(--ink)}
+  .locate.on{color:var(--amber-tx);border-color:var(--amber)}
+  .locate.on .ring{opacity:1}
+  .locate .ring{opacity:0;transition:opacity .2s}
+  .locate.busy{color:transparent}
+  .locate.busy::after{border-color:var(--ink3);border-top-color:var(--ink)}
+
+  /* Route planner: same round control as locate, sitting above it. */
+  .plan{position:absolute;right:10px;bottom:72px;z-index:500;width:42px;height:42px;padding:0;
+        display:grid;place-items:center;border-radius:50%;background:var(--card);color:var(--ink2);box-shadow:var(--lift)}
+  .plan svg{width:20px;height:20px}
+  .plan:hover{background:var(--chosen);color:var(--ink)}
+  .plan.on{color:var(--amber-tx);border-color:var(--amber)}
+  .plan.busy{color:transparent}
+  .plan.busy::after{border-color:var(--ink3);border-top-color:var(--ink)}
+
+  .routes{position:absolute;left:10px;right:64px;bottom:12px;z-index:500;background:var(--card);border:1px solid var(--line);
+          border-radius:var(--r);box-shadow:var(--lift);padding:8px;display:none}
+  .routes.show{display:block}
+  .routes-h{display:flex;align-items:center;gap:6px;padding:0 2px 7px}
+  .routes-h b{font-size:12.5px}
+  .routes-h .sp{flex:1}
+  .routes-h button{padding:4px 9px;font-size:11.5px;box-shadow:none;border-radius:var(--r-pill)}
+  .opt{display:grid;grid-template-columns:1fr auto;gap:2px 10px;align-items:center;width:100%;text-align:left;
+       padding:8px 10px;border-radius:var(--r-s);border:1px solid transparent;background:var(--sink);margin-top:5px;box-shadow:none}
+  .opt:hover{background:var(--key)}
+  .opt.on{border-color:var(--amber);background:var(--amber-dim)}
+  .opt .w{font-size:12.5px;font-weight:600}
+  .opt.on .w{color:var(--amber-tx)}
+  .opt .m{font:11px var(--mono);color:var(--ink3);font-variant-numeric:tabular-nums}
+  .opt .c{grid-column:1/-1;font-size:11.5px;color:var(--ink2)}
+  .opt .c.clean{color:var(--amber-tx)}
+
   .layers{position:absolute;right:10px;top:10px;z-index:500;display:flex;gap:1px;background:var(--line2);border-radius:var(--r-s);overflow:hidden;box-shadow:var(--lift)}
   .layers button{border:0;border-radius:0;padding:7px 11px;background:var(--card);color:var(--ink2);font-size:12px;box-shadow:none}
   .layers button.on{background:var(--chosen);color:var(--amber-tx)}
@@ -154,8 +214,17 @@
   /* phone: list under a shorter map, both scrollable, nothing under the home bar */
   @media (max-width:760px){
     .app{grid-template-columns:1fr;grid-template-rows:minmax(180px,1fr) auto}
-    aside{border-right:0;border-top:1px solid var(--line);grid-row:2;max-height:55vh;padding-bottom:var(--sab)}
+    aside{border-right:0;border-top:1px solid var(--line);grid-row:2;max-height:55vh;padding-bottom:var(--sab);
+          transition:max-height .3s cubic-bezier(.2,.7,.3,1)}
     @supports (height:100dvh){aside{max-height:55dvh}}
+    /* Reading the list means wanting the list. Scrolling it takes the map down to about half
+       and gives the room to the rows; going back to the top puts the map back. */
+    .app.grown{grid-template-rows:minmax(96px,1fr) auto}
+    .app.grown aside{max-height:74vh}
+    @supports (height:100dvh){.app.grown aside{max-height:74dvh}}
+    .locate{bottom:12px;right:8px}
+    .plan{bottom:64px;right:8px}
+    .routes{left:8px;right:60px;bottom:8px;padding:7px}
     .mapwrap{grid-row:1}
     header small:not(.built){display:none}   /* the strapline goes; how old the data is stays */
     header{gap:8px;padding:10px 12px}
@@ -173,9 +242,10 @@
 <body>
 <header>
   <svg class="mark" viewBox="0 0 100 100" aria-hidden="true"><defs><clipPath id="fl-c"><circle cx="50" cy="50" r="50"/></clipPath><mask id="fl-m-out"><rect width="100" height="100" fill="#fff"/><g fill="#000"><polygon points="14,48 64,48 64,76 14,76"/><polygon points="64,43 88,36 88,83 64,81"/><polygon points="24,22 35,22 35,48 24,48"/></g></mask><mask id="fl-m-in"><rect width="100" height="100" fill="#000"/><g fill="#fff"><polygon points="14,48 64,48 64,76 14,76"/><polygon points="64,43 88,36 88,83 64,81"/><polygon points="24,22 35,22 35,48 24,48"/></g></mask><mask id="fl-m-cut"><rect width="100" height="100" fill="#fff"/><circle cx="82" cy="60" r="7.0" fill="#000"/><polygon points="49.92,-3.76 39.68,28.48 45.44,28.48 42.88,55.76 55.68,22.28 48.64,22.28 53.12,-3.76" fill="#000" stroke="#000" stroke-width="1.2" stroke-linejoin="round"/></mask></defs><g clip-path="url(#fl-c)"><g mask="url(#fl-m-cut)" stroke="currentColor" stroke-linecap="butt"><g mask="url(#fl-m-out)"><line x1="-231.425" y1="-20" x2="-91.4249" y2="120" stroke-width="1.15"/><line x1="-222.233" y1="-20" x2="-82.2325" y2="120" stroke-width="1.15"/><line x1="-213.04" y1="-20" x2="-73.0402" y2="120" stroke-width="1.15"/><line x1="-203.848" y1="-20" x2="-63.8478" y2="120" stroke-width="1.15"/><line x1="-194.655" y1="-20" x2="-54.6554" y2="120" stroke-width="1.15"/><line x1="-185.463" y1="-20" x2="-45.463" y2="120" stroke-width="1.15"/><line x1="-176.271" y1="-20" x2="-36.2706" y2="120" stroke-width="1.15"/><line x1="-167.078" y1="-20" x2="-27.0782" y2="120" stroke-width="1.15"/><line x1="-157.886" y1="-20" x2="-17.8858" y2="120" stroke-width="1.15"/><line x1="-148.693" y1="-20" x2="-8.69343" y2="120" stroke-width="1.15"/><line x1="-139.501" y1="-20" x2="0.498954" y2="120" stroke-width="1.15"/><line x1="-130.309" y1="-20" x2="9.69134" y2="120" stroke-width="1.15"/><line x1="-121.116" y1="-20" x2="18.8837" y2="120" stroke-width="1.15"/><line x1="-111.924" y1="-20" x2="28.0761" y2="120" stroke-width="1.15"/><line x1="-102.731" y1="-20" x2="37.2685" y2="120" stroke-width="1.15"/><line x1="-93.5391" y1="-20" x2="46.4609" y2="120" stroke-width="1.15"/><line x1="-84.3467" y1="-20" x2="55.6533" y2="120" stroke-width="1.15"/><line x1="-75.1543" y1="-20" x2="64.8457" y2="120" stroke-width="1.15"/><line x1="-65.9619" y1="-20" x2="74.0381" y2="120" stroke-width="1.15"/><line x1="-56.7696" y1="-20" x2="83.2304" y2="120" stroke-width="1.15"/><line x1="-47.5772" y1="-20" x2="92.4228" y2="120" stroke-width="1.15"/><line x1="-38.3848" y1="-20" x2="101.615" y2="120" stroke-width="1.15"/><line x1="-29.1924" y1="-20" x2="110.808" y2="120" stroke-width="1.15"/><line x1="-20" y1="-20" x2="120" y2="120" stroke-width="1.15"/><line x1="-10.8076" y1="-20" x2="129.192" y2="120" stroke-width="1.15"/><line x1="-1.61522" y1="-20" x2="138.385" y2="120" stroke-width="1.15"/><line x1="7.57716" y1="-20" x2="147.577" y2="120" stroke-width="1.15"/><line x1="16.7696" y1="-20" x2="156.77" y2="120" stroke-width="1.15"/><line x1="25.9619" y1="-20" x2="165.962" y2="120" stroke-width="1.15"/><line x1="35.1543" y1="-20" x2="175.154" y2="120" stroke-width="1.15"/><line x1="44.3467" y1="-20" x2="184.347" y2="120" stroke-width="1.15"/><line x1="53.5391" y1="-20" x2="193.539" y2="120" stroke-width="1.15"/><line x1="62.7315" y1="-20" x2="202.731" y2="120" stroke-width="1.15"/><line x1="71.9239" y1="-20" x2="211.924" y2="120" stroke-width="1.15"/><line x1="81.1163" y1="-20" x2="221.116" y2="120" stroke-width="1.15"/><line x1="90.3087" y1="-20" x2="230.309" y2="120" stroke-width="1.15"/><line x1="99.501" y1="-20" x2="239.501" y2="120" stroke-width="1.15"/><line x1="108.693" y1="-20" x2="248.693" y2="120" stroke-width="1.15"/><line x1="117.886" y1="-20" x2="257.886" y2="120" stroke-width="1.15"/><line x1="127.078" y1="-20" x2="267.078" y2="120" stroke-width="1.15"/><line x1="136.271" y1="-20" x2="276.271" y2="120" stroke-width="1.15"/><line x1="145.463" y1="-20" x2="285.463" y2="120" stroke-width="1.15"/><line x1="154.655" y1="-20" x2="294.655" y2="120" stroke-width="1.15"/><line x1="163.848" y1="-20" x2="303.848" y2="120" stroke-width="1.15"/><line x1="173.04" y1="-20" x2="313.04" y2="120" stroke-width="1.15"/></g><g mask="url(#fl-m-in)"><line x1="-231.425" y1="-20" x2="-91.4249" y2="120" stroke-width="3.335"/><line x1="-222.233" y1="-20" x2="-82.2325" y2="120" stroke-width="3.335"/><line x1="-213.04" y1="-20" x2="-73.0402" y2="120" stroke-width="3.335"/><line x1="-203.848" y1="-20" x2="-63.8478" y2="120" stroke-width="3.335"/><line x1="-194.655" y1="-20" x2="-54.6554" y2="120" stroke-width="3.335"/><line x1="-185.463" y1="-20" x2="-45.463" y2="120" stroke-width="3.335"/><line x1="-176.271" y1="-20" x2="-36.2706" y2="120" stroke-width="3.335"/><line x1="-167.078" y1="-20" x2="-27.0782" y2="120" stroke-width="3.335"/><line x1="-157.886" y1="-20" x2="-17.8858" y2="120" stroke-width="3.335"/><line x1="-148.693" y1="-20" x2="-8.69343" y2="120" stroke-width="3.335"/><line x1="-139.501" y1="-20" x2="0.498954" y2="120" stroke-width="3.335"/><line x1="-130.309" y1="-20" x2="9.69134" y2="120" stroke-width="3.335"/><line x1="-121.116" y1="-20" x2="18.8837" y2="120" stroke-width="3.335"/><line x1="-111.924" y1="-20" x2="28.0761" y2="120" stroke-width="3.335"/><line x1="-102.731" y1="-20" x2="37.2685" y2="120" stroke-width="3.335"/><line x1="-93.5391" y1="-20" x2="46.4609" y2="120" stroke-width="3.335"/><line x1="-84.3467" y1="-20" x2="55.6533" y2="120" stroke-width="3.335"/><line x1="-75.1543" y1="-20" x2="64.8457" y2="120" stroke-width="3.335"/><line x1="-65.9619" y1="-20" x2="74.0381" y2="120" stroke-width="3.335"/><line x1="-56.7696" y1="-20" x2="83.2304" y2="120" stroke-width="3.335"/><line x1="-47.5772" y1="-20" x2="92.4228" y2="120" stroke-width="3.335"/><line x1="-38.3848" y1="-20" x2="101.615" y2="120" stroke-width="3.335"/><line x1="-29.1924" y1="-20" x2="110.808" y2="120" stroke-width="3.335"/><line x1="-20" y1="-20" x2="120" y2="120" stroke-width="3.335"/><line x1="-10.8076" y1="-20" x2="129.192" y2="120" stroke-width="3.335"/><line x1="-1.61522" y1="-20" x2="138.385" y2="120" stroke-width="3.335"/><line x1="7.57716" y1="-20" x2="147.577" y2="120" stroke-width="3.335"/><line x1="16.7696" y1="-20" x2="156.77" y2="120" stroke-width="3.335"/><line x1="25.9619" y1="-20" x2="165.962" y2="120" stroke-width="3.335"/><line x1="35.1543" y1="-20" x2="175.154" y2="120" stroke-width="3.335"/><line x1="44.3467" y1="-20" x2="184.347" y2="120" stroke-width="3.335"/><line x1="53.5391" y1="-20" x2="193.539" y2="120" stroke-width="3.335"/><line x1="62.7315" y1="-20" x2="202.731" y2="120" stroke-width="3.335"/><line x1="71.9239" y1="-20" x2="211.924" y2="120" stroke-width="3.335"/><line x1="81.1163" y1="-20" x2="221.116" y2="120" stroke-width="3.335"/><line x1="90.3087" y1="-20" x2="230.309" y2="120" stroke-width="3.335"/><line x1="99.501" y1="-20" x2="239.501" y2="120" stroke-width="3.335"/><line x1="108.693" y1="-20" x2="248.693" y2="120" stroke-width="3.335"/><line x1="117.886" y1="-20" x2="257.886" y2="120" stroke-width="3.335"/><line x1="127.078" y1="-20" x2="267.078" y2="120" stroke-width="3.335"/><line x1="136.271" y1="-20" x2="276.271" y2="120" stroke-width="3.335"/><line x1="145.463" y1="-20" x2="285.463" y2="120" stroke-width="3.335"/><line x1="154.655" y1="-20" x2="294.655" y2="120" stroke-width="3.335"/><line x1="163.848" y1="-20" x2="303.848" y2="120" stroke-width="3.335"/><line x1="173.04" y1="-20" x2="313.04" y2="120" stroke-width="3.335"/></g></g><polygon points="49.92,-3.76 39.68,28.48 45.44,28.48 42.88,55.76 55.68,22.28 48.64,22.28 53.12,-3.76" fill="var(--amber)"/></g></svg>
-  <b>Flock</b><small>plate readers · Charleston</small>
+  <b>Flock</b><small id="tagline">plate readers · Charleston</small>
   <small id="built" class="built"></small>
   <button id="install" class="ghost" hidden>Save to phone</button>
+  <select id="lang" aria-label="Language" title="Language"></select>
   <span class="n" id="count" aria-live="polite"></span>
 </header>
 <div class="app">
@@ -187,13 +257,39 @@
       <div class="status" id="status" role="status"></div>
     </div>
     <div class="chips" id="chips"></div>
+    <div class="tipbar" id="tipbar">
+      <svg class="bulb" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M9 18h6M10 21.5h4"/><path d="M12 2.5a6.5 6.5 0 0 0-3.8 11.8c.5.4.8 1 .8 1.7h6c0-.7.3-1.3.8-1.7A6.5 6.5 0 0 0 12 2.5Z"/>
+      </svg>
+      <p id="tiptext" role="button" tabindex="0"></p>
+      <span class="nav"><button id="tipprev" aria-label="Previous tip">‹</button><button id="tipnext" aria-label="Next tip">›</button></span>
+      <button id="tipx" aria-label="Hide tips">✕</button>
+    </div>
     <div class="list" id="list" role="listbox" aria-label="Plate readers"><div class="skel"></div><div class="skel"></div><div class="skel"></div></div>
   </aside>
   <div class="mapwrap">
     <div class="layers"><button data-l="map" class="on">Map</button><button data-l="sat">Satellite</button></div>
+    <button id="locate" class="locate" title="Show where you are" aria-label="Show where you are">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" aria-hidden="true">
+        <circle class="ring" cx="12" cy="12" r="9.2" stroke-dasharray="3 4"/>
+        <circle cx="12" cy="12" r="3.4"/><path d="M12 1.6v3.2M12 19.2v3.2M1.6 12h3.2M19.2 12h3.2"/>
+      </svg>
+    </button>
+    <button id="plan" class="plan" title="Plan a route that avoids the cameras" aria-label="Plan a route that avoids the cameras">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M5.5 20c0-4 3.2-4.6 3.2-7.4S5.6 9.4 5.6 6.6 8.4 3 11.5 3h4"/>
+        <path d="m13.8 1.4 2.2 1.6-2.2 1.6"/><circle cx="18.4" cy="17.6" r="2.6"/>
+      </svg>
+    </button>
+    <div class="routes" id="routes" role="group" aria-label="Routes"></div>
     <div id="map"></div>
   </div>
 </div>
+
+<dialog id="tips" aria-labelledby="tips-title">
+  <div class="sheet-h"><b id="tips-title">What people do about these</b><button id="tips-x">Close</button></div>
+  <ul class="tiplist" id="tiplist"></ul>
+</dialog>
 
 <dialog id="sheet" aria-labelledby="sheet-title">
   <div class="sheet-h"><b id="sheet-title">Keep Flock on your phone</b><button id="sheet-x">Close</button></div>
@@ -204,7 +300,7 @@
   <div class="steps" id="steps"></div>
   <div class="sheet-f">
     <button id="doinstall" hidden>Install it now</button>
-    It opens from the home screen like an app, and the streets you have already looked at still work with no signal.
+    <span id="sheet-foot">It opens from the home screen like an app, and the streets you have already looked at still work with no signal.</span>
   </div>
 </dialog>
 
@@ -213,6 +309,198 @@
 <script>
 const $ = s => document.querySelector(s);
 const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+
+// ---------------------------------------------------------------- language
+// Keyed on the English sentence, so anything not yet translated simply stays English
+// instead of showing a missing key. Street names, towns and the map tiles are never
+// touched: an address is only useful in the form it is written on the sign.
+const LANGS = { en: 'English', pt: 'Português', es: 'Español' };
+const DICT = {
+  pt: {
+    'plate readers · Charleston': 'leitores de placas · Charleston',
+    'as of {d}': 'de {d}',
+    'Save to phone': 'Salvar no celular',
+    '{n} cameras': '{n} câmeras',
+    '{a} of {b} cameras': '{a} de {b} câmeras',
+    'Street, town, or an address to measure from': 'Rua, cidade ou endereço de onde medir',
+    'Filter the list, or press Enter to measure distances from an address': 'Filtre a lista, ou pressione Enter para medir distâncias a partir de um endereço',
+    'Near me': 'Perto de mim',
+    'Following': 'Seguindo',
+    'Sort by distance from where you are': 'Ordenar pela distância de onde você está',
+    'Show where you are': 'Mostrar onde você está',
+    'Following you — tap to stop': 'Seguindo você — toque para parar',
+    'Back to where you are': 'Voltar para onde você está',
+    'Map': 'Mapa',
+    'Satellite': 'Satélite',
+    'Plate readers': 'Leitores de placas',
+    'All': 'Todas',
+    'Unknown': 'Desconhecido',
+    'Police': 'Polícia',
+    'no details recorded': 'sem detalhes registrados',
+    'faces {d}': 'aponta para {d}',
+    '{mi} from {name}': '{mi} de {name}',
+    'Copy address': 'Copiar endereço',
+    'Copy link': 'Copiar link',
+    'Copied': 'Copiado',
+    'Fix on OSM ↗': 'Corrigir no OSM ↗',
+    'Wrong, moved, or gone? Fix it at the source': 'Errado, mudou ou sumiu? Corrija na fonte',
+    "Reader here that isn't on the map?": 'Um leitor aqui que não está no mapa?',
+    'Add it on OSM ↗': 'Adicionar no OSM ↗',
+    'Unplaced': 'Sem local',
+    'Stop measuring': 'Parar de medir',
+    'from {name}': 'de {name}',
+    'Clear the filters': 'Limpar os filtros',
+    'Nothing matches “{q}” under {op}.': 'Nada corresponde a “{q}” em {op}.',
+    'Nothing matches “{q}”.': 'Nada corresponde a “{q}”.',
+    'No cameras under {op}.': 'Nenhuma câmera em {op}.',
+    'Finding you…': 'Localizando você…',
+    'This browser cannot share a location. Type an address instead.': 'Este navegador não consegue compartilhar a localização. Digite um endereço.',
+    'Location was refused. Allow it in the browser, or type an address instead.': 'A localização foi recusada. Permita no navegador, ou digite um endereço.',
+    'Could not get a location. Type an address instead.': 'Não foi possível obter a localização. Digite um endereço.',
+    'Looking up “{q}”…': 'Procurando “{q}”…',
+    'Could not find “{q}”. Try a street and a town.': 'Não encontrei “{q}”. Tente uma rua e uma cidade.',
+    'Address lookup failed — no internet, or the lookup service is busy.': 'A busca de endereço falhou — sem internet, ou o serviço está ocupado.',
+    'The browser blocked the clipboard. Here it is: {text}': 'O navegador bloqueou a área de transferência. Aqui está: {text}',
+    'That link points at a reader this copy does not have.': 'Esse link aponta para um leitor que esta cópia não tem.',
+    'Updated — reopen to get the new version': 'Atualizado — reabra para usar a nova versão',
+    'Keep Flock on your phone': 'Deixe o Flock no seu celular',
+    'Close': 'Fechar',
+    'Install it now': 'Instalar agora',
+    'It opens from the home screen like an app, and the streets you have already looked at still work with no signal.': 'Abre pela tela inicial como um aplicativo, e as ruas que você já viu continuam funcionando sem sinal.',
+    'Step {n}': 'Passo {n}',
+    'In Safari, tap this button. It sits in the bar at the <em>bottom</em> of the screen.': 'No Safari, toque neste botão. Ele fica na barra na parte de <em>baixo</em> da tela.',
+    'Scroll that list down and tap <em>Add to Home Screen</em>, then Add.': 'Role essa lista para baixo e toque em <em>Adicionar à Tela de Início</em>, depois Adicionar.',
+    'In Chrome, tap these three dots at the <em>top right</em>.': 'No Chrome, toque nestes três pontinhos no <em>canto superior direito</em>.',
+    'Tap <em>Install app</em>, or <em>Add to Home screen</em>, then Install.': 'Toque em <em>Instalar aplicativo</em>, ou <em>Adicionar à tela inicial</em>, depois Instalar.',
+    'Language': 'Idioma',
+    // routes
+    'Plan a route that avoids the cameras': 'Traçar uma rota que evita as câmeras',
+    'Route': 'Rota',
+    'Tap the map where you want to finish.': 'Toque no mapa onde você quer terminar.',
+    'Start somewhere first: press the locate button, or type an address.': 'Comece de algum lugar: toque no botão de localização, ou digite um endereço.',
+    'Finding a way around them…': 'Procurando um caminho ao redor delas…',
+    'No route came back. The routing service may be busy.': 'Nenhuma rota voltou. O serviço de rotas pode estar ocupado.',
+    'Routing failed — no internet, or the routing service is busy.': 'A rota falhou — sem internet, ou o serviço está ocupado.',
+    'Routes': 'Rotas',
+    'Run': 'Correr',
+    'Drive': 'Dirigir',
+    'Clear': 'Limpar',
+    'no cameras': 'sem câmeras',
+    '1 camera': '1 câmera',
+    '{n} cameras passed': '{n} câmeras no caminho',
+    'clear of every camera': 'livre de todas as câmeras',
+    'Nothing avoids them all. The cleanest way passes {n}.': 'Nada evita todas. O caminho mais limpo passa por {n}.',
+    'What people do about these': 'O que as pessoas fazem sobre isso',
+    'There is no personal opt-out. Flock describes agency-level controls only, so the lever is the city contract, not a setting.': 'Não existe opção de sair individualmente. A Flock descreve apenas controles no nível da agência, então a alavanca é o contrato da cidade, não uma configuração.',
+    'Recordings run on a timer. Communities have commonly deleted after 30 days, and the default dropped to 7 days in August 2026 — though existing customers keep their own setting.': 'As gravações têm prazo. As cidades costumavam apagar depois de 30 dias, e o padrão caiu para 7 dias em agosto de 2026 — mas clientes antigos mantêm a própria configuração.',
+    'You can ask for the paperwork. South Carolina FOIA gives agencies 15 business days, and there are ready-made request templates for contracts, retention policy and camera locations.': 'Você pode pedir os documentos. A lei de acesso da Carolina do Sul dá 15 dias úteis às agências, e existem modelos prontos de pedido para contratos, política de retenção e locais das câmeras.',
+    'Search logs released under records requests have been gathered into a public search tool.': 'Registros de buscas obtidos por pedidos de acesso foram reunidos em uma ferramenta pública de consulta.',
+    'Towns do drop them. 95 US jurisdictions have rejected or removed plate-reader systems, and Ypsilanti, Michigan banned them outright.': 'Cidades realmente desistem delas. 95 jurisdições nos EUA rejeitaram ou removeram sistemas de leitura de placas, e Ypsilanti, no Michigan, proibiu de vez.',
+    'More than 1,500 agencies publish a transparency portal listing their retention period, sharing partners and how many searches they ran.': 'Mais de 1.500 agências publicam um portal de transparência com o prazo de retenção, com quem compartilham e quantas buscas fizeram.',
+    'Around here, Charleston, North Charleston and Mount Pleasant police all use Flock. Mount Pleasant runs 22 cameras and audits them monthly.': 'Por aqui, as polícias de Charleston, North Charleston e Mount Pleasant usam Flock. Mount Pleasant tem 22 câmeras e faz auditoria mensal.',
+    'Misuse gets people fired. A Mauldin officer was fired in 2026 after searching a former partner’s plate 166 times.': 'O uso indevido custa o emprego. Um policial de Mauldin foi demitido em 2026 depois de consultar a placa de uma ex-companheira 166 vezes.',
+    'EFF obtained records of more than 12 million searches by over 3,900 agencies between December 2024 and October 2025.': 'A EFF obteve registros de mais de 12 milhões de buscas feitas por mais de 3.900 agências entre dezembro de 2024 e outubro de 2025.',
+    'Congress opened an investigation after reporting on immigration-related searches, and Flock then blocked out-of-state lookups in three states.': 'O Congresso abriu uma investigação após reportagens sobre buscas ligadas à imigração, e a Flock passou a bloquear consultas de fora em três estados.',
+    'Mapping where the cameras are is lawful. EFF backed the DeFlock project when Flock demanded it stop.': 'Mapear onde estão as câmeras é legal. A EFF apoiou o projeto DeFlock quando a Flock exigiu que ele parasse.',
+    'What is not lawful: covering or altering a plate is illegal in all 50 states, and damaging a camera is prosecuted as property destruction.': 'O que não é legal: cobrir ou alterar a placa é ilegal nos 50 estados, e danificar uma câmera é processado como dano ao patrimônio.',
+  },
+  es: {
+    'plate readers · Charleston': 'lectores de matrículas · Charleston',
+    'as of {d}': 'al {d}',
+    'Save to phone': 'Guardar en el móvil',
+    '{n} cameras': '{n} cámaras',
+    '{a} of {b} cameras': '{a} de {b} cámaras',
+    'Street, town, or an address to measure from': 'Calle, ciudad o dirección desde donde medir',
+    'Filter the list, or press Enter to measure distances from an address': 'Filtra la lista, o pulsa Enter para medir distancias desde una dirección',
+    'Near me': 'Cerca de mí',
+    'Following': 'Siguiendo',
+    'Sort by distance from where you are': 'Ordenar por distancia desde donde estás',
+    'Show where you are': 'Mostrar dónde estás',
+    'Following you — tap to stop': 'Siguiéndote — toca para parar',
+    'Back to where you are': 'Volver a donde estás',
+    'Map': 'Mapa',
+    'Satellite': 'Satélite',
+    'Plate readers': 'Lectores de matrículas',
+    'All': 'Todas',
+    'Unknown': 'Desconocido',
+    'Police': 'Policía',
+    'no details recorded': 'sin detalles registrados',
+    'faces {d}': 'apunta hacia {d}',
+    '{mi} from {name}': '{mi} desde {name}',
+    'Copy address': 'Copiar dirección',
+    'Copy link': 'Copiar enlace',
+    'Copied': 'Copiado',
+    'Fix on OSM ↗': 'Corregir en OSM ↗',
+    'Wrong, moved, or gone? Fix it at the source': '¿Incorrecto, movido o ya no está? Corrígelo en la fuente',
+    "Reader here that isn't on the map?": '¿Un lector aquí que no está en el mapa?',
+    'Add it on OSM ↗': 'Añadirlo en OSM ↗',
+    'Unplaced': 'Sin ubicación',
+    'Stop measuring': 'Dejar de medir',
+    'from {name}': 'desde {name}',
+    'Clear the filters': 'Borrar los filtros',
+    'Nothing matches “{q}” under {op}.': 'Nada coincide con “{q}” en {op}.',
+    'Nothing matches “{q}”.': 'Nada coincide con “{q}”.',
+    'No cameras under {op}.': 'Ninguna cámara en {op}.',
+    'Finding you…': 'Localizándote…',
+    'This browser cannot share a location. Type an address instead.': 'Este navegador no puede compartir la ubicación. Escribe una dirección.',
+    'Location was refused. Allow it in the browser, or type an address instead.': 'Se rechazó la ubicación. Permítela en el navegador, o escribe una dirección.',
+    'Could not get a location. Type an address instead.': 'No se pudo obtener la ubicación. Escribe una dirección.',
+    'Looking up “{q}”…': 'Buscando “{q}”…',
+    'Could not find “{q}”. Try a street and a town.': 'No encontré “{q}”. Prueba con una calle y una ciudad.',
+    'Address lookup failed — no internet, or the lookup service is busy.': 'La búsqueda falló — sin internet, o el servicio está ocupado.',
+    'The browser blocked the clipboard. Here it is: {text}': 'El navegador bloqueó el portapapeles. Aquí está: {text}',
+    'That link points at a reader this copy does not have.': 'Ese enlace apunta a un lector que esta copia no tiene.',
+    'Updated — reopen to get the new version': 'Actualizado — vuelve a abrirlo para la nueva versión',
+    'Keep Flock on your phone': 'Ten Flock en tu móvil',
+    'Close': 'Cerrar',
+    'Install it now': 'Instalar ahora',
+    'It opens from the home screen like an app, and the streets you have already looked at still work with no signal.': 'Se abre desde la pantalla de inicio como una app, y las calles que ya has mirado siguen funcionando sin señal.',
+    'Step {n}': 'Paso {n}',
+    'In Safari, tap this button. It sits in the bar at the <em>bottom</em> of the screen.': 'En Safari, toca este botón. Está en la barra de <em>abajo</em> de la pantalla.',
+    'Scroll that list down and tap <em>Add to Home Screen</em>, then Add.': 'Baja por esa lista y toca <em>Añadir a pantalla de inicio</em>, luego Añadir.',
+    'In Chrome, tap these three dots at the <em>top right</em>.': 'En Chrome, toca estos tres puntos de <em>arriba a la derecha</em>.',
+    'Tap <em>Install app</em>, or <em>Add to Home screen</em>, then Install.': 'Toca <em>Instalar aplicación</em>, o <em>Añadir a pantalla de inicio</em>, luego Instalar.',
+    'Language': 'Idioma',
+    // routes
+    'Plan a route that avoids the cameras': 'Trazar una ruta que evite las cámaras',
+    'Route': 'Ruta',
+    'Tap the map where you want to finish.': 'Toca el mapa donde quieres terminar.',
+    'Start somewhere first: press the locate button, or type an address.': 'Empieza desde algún sitio: toca el botón de ubicación, o escribe una dirección.',
+    'Finding a way around them…': 'Buscando un camino que las rodee…',
+    'No route came back. The routing service may be busy.': 'No volvió ninguna ruta. El servicio puede estar ocupado.',
+    'Routing failed — no internet, or the routing service is busy.': 'La ruta falló — sin internet, o el servicio está ocupado.',
+    'Routes': 'Rutas',
+    'Run': 'Correr',
+    'Drive': 'Conducir',
+    'Clear': 'Borrar',
+    'no cameras': 'sin cámaras',
+    '1 camera': '1 cámara',
+    '{n} cameras passed': '{n} cámaras en el camino',
+    'clear of every camera': 'libre de todas las cámaras',
+    'Nothing avoids them all. The cleanest way passes {n}.': 'Nada las evita todas. El camino más limpio pasa por {n}.',
+    'What people do about these': 'Lo que la gente hace al respecto',
+    'There is no personal opt-out. Flock describes agency-level controls only, so the lever is the city contract, not a setting.': 'No hay forma de excluirse individualmente. Flock solo describe controles a nivel de agencia, así que la palanca es el contrato municipal, no un ajuste.',
+    'Recordings run on a timer. Communities have commonly deleted after 30 days, and the default dropped to 7 days in August 2026 — though existing customers keep their own setting.': 'Las grabaciones tienen plazo. Los municipios solían borrarlas a los 30 días, y el valor por defecto bajó a 7 días en agosto de 2026 — aunque los clientes antiguos conservan su propio ajuste.',
+    'You can ask for the paperwork. South Carolina FOIA gives agencies 15 business days, and there are ready-made request templates for contracts, retention policy and camera locations.': 'Puedes pedir los documentos. La ley de acceso de Carolina del Sur da 15 días hábiles a las agencias, y hay plantillas listas para pedir contratos, política de retención y ubicaciones de cámaras.',
+    'Search logs released under records requests have been gathered into a public search tool.': 'Los registros de búsquedas obtenidos por solicitudes de acceso se han reunido en una herramienta pública de consulta.',
+    'Towns do drop them. 95 US jurisdictions have rejected or removed plate-reader systems, and Ypsilanti, Michigan banned them outright.': 'Los municipios sí las retiran. 95 jurisdicciones de EE. UU. han rechazado o quitado sistemas de lectura de matrículas, y Ypsilanti, Michigan, los prohibió del todo.',
+    'More than 1,500 agencies publish a transparency portal listing their retention period, sharing partners and how many searches they ran.': 'Más de 1.500 agencias publican un portal de transparencia con su plazo de retención, con quién comparten y cuántas búsquedas hicieron.',
+    'Around here, Charleston, North Charleston and Mount Pleasant police all use Flock. Mount Pleasant runs 22 cameras and audits them monthly.': 'Por aquí, las policías de Charleston, North Charleston y Mount Pleasant usan Flock. Mount Pleasant tiene 22 cámaras y las audita cada mes.',
+    'Misuse gets people fired. A Mauldin officer was fired in 2026 after searching a former partner’s plate 166 times.': 'El mal uso cuesta el puesto. Un agente de Mauldin fue despedido en 2026 tras consultar la matrícula de su expareja 166 veces.',
+    'EFF obtained records of more than 12 million searches by over 3,900 agencies between December 2024 and October 2025.': 'La EFF obtuvo registros de más de 12 millones de búsquedas hechas por más de 3.900 agencias entre diciembre de 2024 y octubre de 2025.',
+    'Congress opened an investigation after reporting on immigration-related searches, and Flock then blocked out-of-state lookups in three states.': 'El Congreso abrió una investigación tras los reportajes sobre búsquedas ligadas a inmigración, y Flock bloqueó después las consultas de fuera del estado en tres estados.',
+    'Mapping where the cameras are is lawful. EFF backed the DeFlock project when Flock demanded it stop.': 'Mapear dónde están las cámaras es legal. La EFF respaldó al proyecto DeFlock cuando Flock le exigió parar.',
+    'What is not lawful: covering or altering a plate is illegal in all 50 states, and damaging a camera is prosecuted as property destruction.': 'Lo que no es legal: tapar o alterar una matrícula es ilegal en los 50 estados, y dañar una cámara se persigue como daño a la propiedad.',
+  },
+};
+let LANG = localStorage.getItem('flock.lang');
+if (!LANG || !(LANG in LANGS)) LANG = (navigator.language || 'en').slice(0, 2).toLowerCase();
+if (!(LANG in LANGS)) LANG = 'en';
+function T(s, vars) {
+  let out = (LANG !== 'en' && DICT[LANG] && DICT[LANG][s]) || s;
+  if (vars) out = out.replace(/\{(\w+)\}/g, (m, k) => (vars[k] == null ? m : vars[k]));
+  return out;
+}
 
 // Honour the OS setting for map flights too, not just CSS animation. A hidden tab gets
 // no animation frames, so a link opened in the background would otherwise never arrive:
@@ -235,7 +523,7 @@ function say(msg, bad) {
   if (msg) statusTimer = setTimeout(() => { el.textContent = ''; el.classList.remove('bad'); }, 6000);
 }
 
-const map = L.map('map', { zoomControl: true }).setView([32.82, -79.95], 11);
+const map = L.map('map', { zoomControl: true }).setView([32.82, -79.95], 10);
 const street = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '&copy; OpenStreetMap contributors' }).addTo(map);
 const sat = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { maxZoom: 19, attribution: 'Imagery &copy; Esri' });
 document.querySelectorAll('.layers button').forEach(b => b.onclick = () => {
@@ -245,7 +533,7 @@ document.querySelectorAll('.layers button').forEach(b => b.onclick = () => {
   map.getContainer().classList.toggle('sat', isSat);
 });
 
-let CAMS = [], MARK = {}, CONE = {}, CUR = null;
+let CAMS = [], MARK = {}, CONE = {}, CUR = null, BUILT = '';
 let BYID = new Map();                             // id -> camera, so lookups aren't a scan
 let ROWS = [];                                    // what the list is showing, in order
 let KB = -1;                                      // arrow-key position within ROWS
@@ -295,18 +583,18 @@ function popupHtml(c) {
   const bits = [];
   if (c.operator) bits.push(esc(c.operator));
   if (c.maker) bits.push(esc(c.maker));
-  if (dirText(c.direction)) bits.push('faces ' + dirText(c.direction));
-  const dist = HOME ? `<small>${fmtMi(milesTo(c))} from ${esc(HOME.name)}</small>` : '';
-  return `<b>${esc(c.label)}</b><small>${bits.join(' · ') || 'no details recorded'}</small>${dist}
-    <div class="acts"><a href="${gmaps(c)}" target="_blank" rel="noopener">Google Maps ↗</a><a href="#" data-copy="${esc(c.label)}">Copy address</a><a href="#" data-share="${esc(c.id)}">Copy link</a><a href="${osmEdit(c)}" target="_blank" rel="noopener" title="Wrong, moved, or gone? Fix it at the source" class="fix">Fix on OSM ↗</a></div>`;
+  if (dirText(c.direction)) bits.push(T('faces {d}', { d: dirText(c.direction) }));
+  const dist = HOME ? `<small>${esc(T('{mi} from {name}', { mi: fmtMi(milesTo(c)), name: HOME.name }))}</small>` : '';
+  return `<b>${esc(c.label)}</b><small>${bits.join(' · ') || esc(T('no details recorded'))}</small>${dist}
+    <div class="acts"><a href="${gmaps(c)}" target="_blank" rel="noopener">Google Maps ↗</a><a href="#" data-copy="${esc(c.label)}">${esc(T('Copy address'))}</a><a href="#" data-share="${esc(c.id)}">${esc(T('Copy link'))}</a><a href="${osmEdit(c)}" target="_blank" rel="noopener" title="${esc(T('Wrong, moved, or gone? Fix it at the source'))}" class="fix">${esc(T('Fix on OSM ↗'))}</a></div>`;
 }
 map.on('popupopen', e => {
   const el = e.popup.getElement();
   const copy = (a, text) => {
     a.onclick = async ev => {
       ev.preventDefault();
-      try { await navigator.clipboard.writeText(text); a.textContent = 'Copied'; }
-      catch (err) { say('The browser blocked the clipboard. Here it is: ' + text); }
+      try { await navigator.clipboard.writeText(text); a.textContent = T('Copied'); }
+      catch (err) { say(T('The browser blocked the clipboard. Here it is: {text}', { text })); }
     };
   };
   const a = el.querySelector('[data-copy]'); if (a) copy(a, a.dataset.copy);
@@ -319,8 +607,8 @@ map.on('contextmenu', e => {
   const { lat, lng } = e.latlng;
   L.popup({ closeButton: false, className: 'addpop' })
     .setLatLng(e.latlng)
-    .setContent(`<b>Reader here that isn't on the map?</b><small>${lat.toFixed(5)}, ${lng.toFixed(5)}</small>
-      <div class="acts"><a href="${osmAdd(lat, lng)}" target="_blank" rel="noopener" class="fix">Add it on OSM ↗</a></div>`)
+    .setContent(`<b>${esc(T("Reader here that isn't on the map?"))}</b><small>${lat.toFixed(5)}, ${lng.toFixed(5)}</small>
+      <div class="acts"><a href="${osmAdd(lat, lng)}" target="_blank" rel="noopener" class="fix">${esc(T('Add it on OSM ↗'))}</a></div>`)
     .openOn(map);
 });
 
@@ -374,29 +662,54 @@ function clearHome() {
 // "Near me" is a live watch, not a one-shot: the list re-sorts and the arrow turns as
 // you move. Tapping it again stops. Dragging the map pauses following until re-tapped.
 let WATCH = null, FOLLOW = false, DRAGGING = false;
-map.on('dragstart', () => { DRAGGING = true; if (FOLLOW) { FOLLOW = false; $('#near').classList.remove('on'); $('#near').textContent = 'Near me'; } });
+map.on('dragstart', () => { DRAGGING = true; if (FOLLOW) { FOLLOW = false; paintWatch(); } });
 map.on('dragend', () => { DRAGGING = false; });
+
+// Three states, shown on both buttons at once: off, located but panned away, following.
+function paintWatch(busy) {
+  const b = $('#near'), l = $('#locate');
+  b.classList.toggle('busy', !!busy); b.disabled = !!busy;
+  b.classList.toggle('on', WATCH != null);
+  b.textContent = FOLLOW ? T('Following') : T('Near me');
+  l.classList.toggle('busy', !!busy);
+  l.classList.toggle('on', FOLLOW);
+  l.classList.toggle('held', WATCH != null && !FOLLOW);
+  const t = WATCH == null ? T('Show where you are')
+          : FOLLOW ? T('Following you — tap to stop') : T('Back to where you are');
+  l.title = t; l.setAttribute('aria-label', t);
+}
 function stopWatch() {
   if (WATCH != null) navigator.geolocation.clearWatch(WATCH);
   WATCH = null; FOLLOW = false;
-  const b = $('#near'); b.classList.remove('on', 'busy'); b.disabled = false; b.textContent = 'Near me';
+  paintWatch();
 }
-$('#near').onclick = () => {
-  const b = $('#near');
-  if (WATCH != null) { stopWatch(); return; }
-  if (!navigator.geolocation) return say('This browser cannot share a location. Type an address instead.', true);
-  b.classList.add('busy'); b.disabled = true; say('Finding you…');
+function startWatch() {
+  if (WATCH != null) return;
+  if (!navigator.geolocation) return say(T('This browser cannot share a location. Type an address instead.'), true);
+  paintWatch(true); say(T('Finding you…'));
   let first = true;
   WATCH = navigator.geolocation.watchPosition(p => {
-    if (first) { b.classList.remove('busy'); b.disabled = false; b.classList.add('on'); b.textContent = 'Following'; say(''); FOLLOW = true; }
+    if (first) { FOLLOW = true; say(''); paintWatch(); }
     setHeading(p.coords.heading);   // null when standing still; the arrow hides itself
     setHome(p.coords.latitude, p.coords.longitude, 'you', { quiet: !first });
     first = false;
   }, err => {
     stopWatch();
-    say(err.code === 1 ? 'Location was refused. Allow it in the browser, or type an address instead.'
-                       : 'Could not get a location. Type an address instead.', true);
+    say(err.code === 1 ? T('Location was refused. Allow it in the browser, or type an address instead.')
+                       : T('Could not get a location. Type an address instead.'), true);
   }, { enableHighAccuracy: true, timeout: 15000, maximumAge: 5000 });
+}
+$('#near').onclick = () => { WATCH != null ? stopWatch() : startWatch(); };
+// On the map the same button reads differently: after panning away, the useful thing is
+// to come back, not to switch the whole thing off.
+$('#locate').onclick = () => {
+  if (WATCH == null) return startWatch();
+  if (!FOLLOW) {
+    FOLLOW = true; paintWatch();
+    if (HOME) fly([HOME.lat, HOME.lon], Math.max(map.getZoom(), 15));
+    return;
+  }
+  stopWatch();
 };
 
 // An address in the box: Enter looks it up (Nominatim, no key) and measures from there.
@@ -429,12 +742,12 @@ $('#q').addEventListener('keydown', async e => {
   // Arrowing to a row makes Enter mean "this one", not "look this address up".
   if (ARROWED && KB >= 0 && ROWS[KB]) { e.preventDefault(); return select(ROWS[KB].id, true); }
   const q = e.target.value.trim(); if (!q) return;
-  e.target.disabled = true; say('Looking up “' + q + '”…');
+  e.target.disabled = true; say(T('Looking up “{q}”…', { q }));
   try {
     const hit = await geocode(q);
     if (hit) { e.target.value = ''; say(''); setHome(hit.lat, hit.lon, hit.name); }
-    else say('Could not find “' + q + '”. Try a street and a town.', true);
-  } catch (err) { say('Address lookup failed — no internet, or the lookup service is busy.', true); }
+    else say(T('Could not find “{q}”. Try a street and a town.', { q }), true);
+  } catch (err) { say(T('Address lookup failed — no internet, or the lookup service is busy.'), true); }
   e.target.disabled = false; e.target.focus();
 });
 
@@ -443,8 +756,8 @@ function buildChips() {
   const ops = {};
   for (const c of CAMS) { const k = opKey(c); ops[k] = (ops[k] || 0) + 1; }
   const order = Object.keys(ops).sort((a, b) => ops[b] - ops[a]);
-  $('#chips').innerHTML = `<button data-op="all" class="on">All <small>${CAMS.length}</small></button>` +
-    order.map(k => `<button data-op="${esc(k)}">${esc(k)} <small>${ops[k]}</small></button>`).join('') +
+  $('#chips').innerHTML = `<button data-op="all" class="${OP === 'all' ? 'on' : ''}">${esc(T('All'))} <small>${CAMS.length}</small></button>` +
+    order.map(k => `<button data-op="${esc(k)}" class="${OP === k ? 'on' : ''}">${esc(T(k))} <small>${ops[k]}</small></button>`).join('') +
     `<span class="sp"></span><span class="near" id="nearlab"></span>`;
   $('#chips').querySelectorAll('button').forEach(b => b.onclick = () => {
     OP = b.dataset.op;
@@ -537,7 +850,7 @@ function fromHash(fly) {
   const m = /[#&]cam=([^&]+)/.exec(location.hash);
   if (!m) return false;
   const id = decodeURIComponent(m[1]);
-  if (!BYID.has(id)) { say('That link points at a reader this copy does not have.', true); return false; }
+  if (!BYID.has(id)) { say(T('That link points at a reader this copy does not have.'), true); return false; }
   select(id, fly);
   return true;
 }
@@ -573,19 +886,21 @@ function render(q) {
   syncLayers();
 
   const nl = $('#nearlab');
-  if (nl) nl.innerHTML = HOME ? `from <b>${esc(HOME.name)}</b><a title="Stop measuring" id="clearhome" role="button" tabindex="0">✕</a>` : '';
+  if (nl) nl.innerHTML = HOME ? `${esc(T('from {name}', { name: ' ' })).replace(' ', '<b>' + esc(HOME.name) + '</b>')}<a title="${esc(T('Stop measuring'))}" id="clearhome" role="button" tabindex="0">✕</a>` : '';
   if (nl && HOME) $('#clearhome').onclick = clearHome;
 
   ROWS = rows;
   KB = CUR ? rows.findIndex(r => r.id === CUR) : -1;
   ARROWED = false;   // the list moved under it; Enter goes back to meaning "look this address up"
-  $('#count').textContent = (rows.length !== CAMS.length ? rows.length + ' of ' : '') + CAMS.length + ' cameras';
+  $('#count').textContent = rows.length !== CAMS.length
+    ? T('{a} of {b} cameras', { a: rows.length, b: CAMS.length })
+    : T('{n} cameras', { n: CAMS.length });
 
   if (!rows.length) {
-    const why = q && OP !== 'all' ? `Nothing matches “${esc(q)}” under ${esc(OP)}.`
-              : q ? `Nothing matches “${esc(q)}”.`
-              : `No cameras under ${esc(OP)}.`;
-    list.innerHTML = `<div class="empty">${why}<br><button id="resetf">Clear the filters</button></div>`;
+    const why = q && OP !== 'all' ? esc(T('Nothing matches “{q}” under {op}.', { q, op: T(OP) }))
+              : q ? esc(T('Nothing matches “{q}”.', { q }))
+              : esc(T('No cameras under {op}.', { op: T(OP) }));
+    list.innerHTML = `<div class="empty">${why}<br><button id="resetf">${esc(T('Clear the filters'))}</button></div>`;
     $('#resetf').onclick = resetFilters;
     return;
   }
@@ -593,7 +908,7 @@ function render(q) {
   let town = null, html = '';
   for (const c of rows) {
     if (!HOME) {
-      const t = c.city || 'Unplaced';
+      const t = c.city || T('Unplaced');
       if (t !== town) { town = t; html += `<div class="town">${esc(t)}</div>`; }
     }
     const d = HOME ? `<b>${fmtMi(milesTo(c))}</b>${esc(dirText(c.direction))}` : esc(dirText(c.direction));
@@ -634,12 +949,13 @@ function boot(d) {
     CONE[c.id] = coneFor(c);          // added to the map by syncLayers, once the zoom warrants it
   }
   group.addTo(map);
-  if (CAMS.length) map.fitBounds(group.getBounds().pad(.05));
+  // A little wider than the tightest fit: the edge readers sat right on the border before.
+  if (CAMS.length) map.fitBounds(group.getBounds().pad(.28), { maxZoom: 10.4 });
   buildChips();
   render('');
   document.title = `Flock — ${CAMS.length} plate readers`;
   // How old this snapshot is, said out loud — a stale copy on a phone looks identical to a fresh one.
-  if (d.built) $('#built').textContent = 'as of ' + d.built.slice(0, 10);
+  if (d.built) { BUILT = d.built.slice(0, 10); $('#built').textContent = T('as of {d}', { d: BUILT }); }
   // A shared link wins over the fitted bounds, but only after the map has settled.
   if (location.hash) setTimeout(() => fromHash(true), 50);
 }
@@ -678,7 +994,7 @@ function drawGuide() {
   $('#steps').innerHTML = GUIDE[OS].map((s, i) => `
     <div class="step">
       <div class="art">${ART[s.art]}</div>
-      <div><div class="n">Step ${i + 1}</div><p>${s.t}</p></div>
+      <div><div class="n">${esc(T('Step {n}', { n: i + 1 }))}</div><p>${T(s.t)}</p></div>
     </div>`).join('');
   sheet.querySelectorAll('.sheet-t button').forEach(b => b.classList.toggle('on', b.dataset.os === OS));
 }
@@ -701,6 +1017,289 @@ $('#doinstall').onclick = async () => {
 const standalone = matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
 $('#install').hidden = standalone;
 addEventListener('appinstalled', () => { $('#install').hidden = true; sheet.close(); });
+
+// ---------------------------------------------------------------- language, applied live
+function applyLang() {
+  document.documentElement.lang = LANG;
+  $('#tagline').textContent = T('plate readers · Charleston');
+  $('#install').textContent = T('Save to phone');
+  if (BUILT) $('#built').textContent = T('as of {d}', { d: BUILT });
+  const q = $('#q');
+  q.placeholder = T('Street, town, or an address to measure from');
+  q.setAttribute('aria-label', T('Filter the list, or press Enter to measure distances from an address'));
+  $('#near').title = T('Sort by distance from where you are');
+  $('#list').setAttribute('aria-label', T('Plate readers'));
+  document.querySelectorAll('.layers button').forEach(b => b.textContent = T(b.dataset.l === 'map' ? 'Map' : 'Satellite'));
+  const p = $('#plan');
+  p.title = T('Plan a route that avoids the cameras'); p.setAttribute('aria-label', p.title);
+  $('#lang').title = T('Language'); $('#lang').setAttribute('aria-label', T('Language'));
+  $('#sheet-title').textContent = T('Keep Flock on your phone');
+  $('#sheet-x').textContent = T('Close');
+  $('#doinstall').textContent = T('Install it now');
+  $('#sheet-foot').textContent = T('It opens from the home screen like an app, and the streets you have already looked at still work with no signal.');
+  paintWatch();
+  drawGuide();
+  // An open popup still holds the old wording, and rewriting it under the reader is worse
+  // than closing it.
+  map.closePopup();
+  if (CAMS.length) { buildChips(); render($('#q').value); }
+  if (ROUTED.length) drawRoutes();
+  if (typeof paintTip === 'function') paintTip();
+}
+$('#lang').innerHTML = Object.entries(LANGS).map(([k, v]) => `<option value="${k}">${esc(v)}</option>`).join('');
+$('#lang').value = LANG;
+$('#lang').onchange = e => {
+  LANG = e.target.value;
+  try { localStorage.setItem('flock.lang', LANG); } catch (err) {}
+  applyLang();
+};
+addEventListener('load', applyLang);
+
+
+// ---------------------------------------------------------------- tips
+// What people around these cameras actually do about them, drawn from reporting, court
+// records and the agencies' own pages. Every line has its source attached. The last one
+// is the line about what is against the law; it stays in, because leaving it out would
+// make the rest read like an invitation.
+const TIPS = [
+  { t: 'There is no personal opt-out. Flock describes agency-level controls only, so the lever is the city contract, not a setting.',
+    u: 'https://www.flocksafety.com/trust/data-privacy', s: 'Flock Trust Center' },
+  { t: 'Recordings run on a timer. Communities have commonly deleted after 30 days, and the default dropped to 7 days in August 2026 — though existing customers keep their own setting.',
+    u: 'https://stateline.org/2026/08/14/flock-safety-tightens-safeguards-as-states-cities-question-surveillance-network/', s: 'Stateline' },
+  { t: 'You can ask for the paperwork. South Carolina FOIA gives agencies 15 business days, and there are ready-made request templates for contracts, retention policy and camera locations.',
+    u: 'https://deflocksc.org/toolkit/foia/', s: 'DeflockSC' },
+  { t: 'Search logs released under records requests have been gathered into a public search tool.',
+    u: 'https://haveibeenflocked.com/', s: 'HaveIBeenFlocked' },
+  { t: 'Towns do drop them. 95 US jurisdictions have rejected or removed plate-reader systems, and Ypsilanti, Michigan banned them outright.',
+    u: 'https://www.newsweek.com/map-cities-rejected-deactivated-flock-cameras-12253499', s: 'Newsweek' },
+  { t: 'More than 1,500 agencies publish a transparency portal listing their retention period, sharing partners and how many searches they ran.',
+    u: 'https://transparency.flocksafety.com/', s: 'Flock transparency portals' },
+  { t: 'Around here, Charleston, North Charleston and Mount Pleasant police all use Flock. Mount Pleasant runs 22 cameras and audits them monthly.',
+    u: 'https://www.postandcourier.com/news/crime/charleston-police-flock-camera-policies/article_461eb45a-32fa-44a8-b163-dacd737ada27.html', s: 'Post and Courier' },
+  { t: 'Misuse gets people fired. A Mauldin officer was fired in 2026 after searching a former partner\u2019s plate 166 times.',
+    u: 'https://www.postandcourier.com/news/crime/charleston-police-flock-camera-policies/article_461eb45a-32fa-44a8-b163-dacd737ada27.html', s: 'Post and Courier' },
+  { t: 'EFF obtained records of more than 12 million searches by over 3,900 agencies between December 2024 and October 2025.',
+    u: 'https://www.eff.org/deeplinks/2025/12/effs-investigations-expose-flock-safetys-surveillance-abuses-2025-review', s: 'EFF' },
+  { t: 'Congress opened an investigation after reporting on immigration-related searches, and Flock then blocked out-of-state lookups in three states.',
+    u: 'https://www.404media.co/congress-launches-investigation-into-flock-after-404-media-reporting/', s: '404 Media' },
+  { t: 'Mapping where the cameras are is lawful. EFF backed the DeFlock project when Flock demanded it stop.',
+    u: 'https://www.eff.org/deeplinks/2025/02/anti-surveillance-mapmaker-refuses-flock-safetys-cease-and-desist-demand', s: 'EFF' },
+  { t: 'What is not lawful: covering or altering a plate is illegal in all 50 states, and damaging a camera is prosecuted as property destruction.',
+    u: 'https://www.governing.com/management-and-administration/states-crack-down-on-license-plate-flippers-used-to-avoid-police-fees', s: 'Governing', law: true },
+];
+let TIP = 0;
+try { TIP = Math.max(0, Math.min(TIPS.length - 1, +(localStorage.getItem('flock.tip') || 0))); } catch (e) {}
+const tipsDlg = $('#tips');
+function paintTip() {
+  $('#tiptext').textContent = T(TIPS[TIP].t);
+  try { localStorage.setItem('flock.tip', TIP); } catch (e) {}
+}
+function stepTip(n) { TIP = (TIP + n + TIPS.length) % TIPS.length; paintTip(); }
+$('#tipnext').onclick = () => stepTip(1);
+$('#tipprev').onclick = () => stepTip(-1);
+$('#tipx').onclick = () => {
+  $('#tipbar').hidden = true;
+  try { localStorage.setItem('flock.tipsoff', '1'); } catch (e) {}
+};
+function openTips() {
+  $('#tiplist').innerHTML = TIPS.map(x => `<li${x.law ? ' class="law"' : ''}>${esc(T(x.t))}<br>
+    <a href="${x.u}" target="_blank" rel="noopener">${esc(x.s)} \u2197</a></li>`).join('');
+  $('#tips-title').textContent = T('What people do about these');
+  $('#tips-x').textContent = T('Close');
+  tipsDlg.showModal();
+}
+$('#tiptext').onclick = openTips;
+$('#tiptext').onkeydown = e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openTips(); } };
+$('#tips-x').onclick = () => tipsDlg.close();
+tipsDlg.addEventListener('click', e => { if (e.target === tipsDlg) tipsDlg.close(); });
+try { if (localStorage.getItem('flock.tipsoff')) $('#tipbar').hidden = true; } catch (e) {}
+paintTip();
+
+// ---------------------------------------------------------------- routes past no cameras
+// Valhalla, the router OpenStreetMap itself runs, is asked for a handful of ways to get
+// there. Each one is measured against the camera list, and whichever passes fewest wins.
+// If the best still passes some, it is asked again with those exact cameras excluded.
+const VALHALLA = 'https://valhalla1.openstreetmap.de/route';
+const PASS_M = 55;          // within this of the line is "you went past it"
+const ROUTE_LINE = { clean: '#D68A3E', other: '#6F6B66' };
+let PLANNING = false, ROUTED = [], ROUTE_LAYER = L.layerGroup(), PICKED = 0, MODE = 'pedestrian', ROUTE_ENDS = null;
+ROUTE_LAYER.addTo(map);
+
+// Valhalla returns polyline6 — the usual algorithm with six decimals instead of five.
+function decode6(str) {
+  const out = []; let i = 0, lat = 0, lon = 0;
+  while (i < str.length) {
+    let r = 0, sh = 0, b;
+    do { b = str.charCodeAt(i++) - 63; r |= (b & 0x1f) << sh; sh += 5; } while (b >= 0x20);
+    lat += (r & 1) ? ~(r >> 1) : (r >> 1);
+    r = 0; sh = 0;
+    do { b = str.charCodeAt(i++) - 63; r |= (b & 0x1f) << sh; sh += 5; } while (b >= 0x20);
+    lon += (r & 1) ? ~(r >> 1) : (r >> 1);
+    out.push([lat / 1e6, lon / 1e6]);
+  }
+  return out;
+}
+
+// Metres from a point to a segment, flat-earth over these distances (a few km at most).
+function segMetres(plat, plon, alat, alon, blat, blon) {
+  const k = Math.cos(plat * Math.PI / 180), M = 111320;
+  const ax = (alon - plon) * k * M, ay = (alat - plat) * M;
+  const bx = (blon - plon) * k * M, by = (blat - plat) * M;
+  const dx = bx - ax, dy = by - ay, len = dx * dx + dy * dy;
+  let t = len ? -(ax * dx + ay * dy) / len : 0;
+  t = Math.max(0, Math.min(1, t));
+  const x = ax + t * dx, y = ay + t * dy;
+  return Math.hypot(x, y);
+}
+
+// Which cameras this line goes past. Only cameras inside the route's bounding box are
+// measured properly; the rest are thrown out by a cheap box test first.
+function camerasOn(pts) {
+  if (!pts.length) return [];
+  let n = -90, s = 90, e = -180, w = 180;
+  for (const [la, lo] of pts) {
+    if (la > n) n = la; if (la < s) s = la;
+    if (lo > e) e = lo; if (lo < w) w = lo;
+  }
+  const pad = PASS_M / 111320 * 1.5;
+  const hit = [];
+  for (const c of CAMS) {
+    if (c.lat < s - pad || c.lat > n + pad || c.lon < w - pad || c.lon > e + pad) continue;
+    let best = Infinity;
+    for (let i = 1; i < pts.length && best > PASS_M; i++)
+      best = Math.min(best, segMetres(c.lat, c.lon, pts[i - 1][0], pts[i - 1][1], pts[i][0], pts[i][1]));
+    if (best <= PASS_M) hit.push(c);
+  }
+  return hit;
+}
+
+async function valhalla(from, to, exclude) {
+  const body = {
+    locations: [{ lat: from.lat, lon: from.lon }, { lat: to.lat, lon: to.lon }],
+    costing: MODE, alternates: 2, units: 'miles',
+    directions_options: { language: 'en-US' },   // the router's own words stay English
+  };
+  if (exclude && exclude.length) body.exclude_locations = exclude.slice(0, 50).map(c => ({ lat: c.lat, lon: c.lon }));
+  const r = await fetch(VALHALLA + '?json=' + encodeURIComponent(JSON.stringify(body)));
+  if (!r.ok) throw new Error('router ' + r.status);
+  const j = await r.json();
+  const trips = [j.trip, ...(j.alternates || []).map(a => a.trip)].filter(t => t && t.legs);
+  return trips.map(t => ({
+    pts: t.legs.flatMap(l => decode6(l.shape)),
+    miles: t.summary ? t.summary.length : 0,
+  }));
+}
+
+function scoreAndKeep(list) {
+  for (const r of list) {
+    const key = r.pts.length ? r.pts[Math.floor(r.pts.length / 2)].join(',') : '';
+    r.hits = camerasOn(r.pts); r.n = r.hits.length; r.key = key + '|' + Math.round(r.miles * 100);
+  }
+  const seen = new Set();
+  return list.filter(r => r.pts.length && !seen.has(r.key) && seen.add(r.key))
+             .sort((a, b) => a.n - b.n || a.miles - b.miles);
+}
+
+function drawRoutes() {
+  ROUTE_LAYER.clearLayers();
+  ROUTED.forEach((r, i) => {
+    const on = i === PICKED;
+    ROUTE_LAYER.addLayer(L.polyline(r.pts, {
+      color: on ? (r.n ? '#E9A75B' : ROUTE_LINE.clean) : ROUTE_LINE.other,
+      weight: on ? 5 : 3, opacity: on ? .95 : .45, dashArray: on ? null : '5 6', interactive: false,
+    }));
+  });
+  const box = $('#routes');
+  box.innerHTML = `<div class="routes-h"><b>${esc(T('Routes'))}</b><span class="sp"></span>
+      <button data-mode="pedestrian" class="${MODE === 'pedestrian' ? 'on' : ''}">${esc(T('Run'))}</button>
+      <button data-mode="auto" class="${MODE === 'auto' ? 'on' : ''}">${esc(T('Drive'))}</button>
+      <button data-clear="1">${esc(T('Clear'))}</button></div>` +
+    ROUTED.map((r, i) => `<button class="opt${i === PICKED ? ' on' : ''}" data-i="${i}">
+        <span class="w">${r.n === 0 ? esc(T('no cameras')) : r.n === 1 ? esc(T('1 camera')) : esc(T('{n} cameras passed', { n: r.n }))}</span>
+        <span class="m">${r.miles ? r.miles.toFixed(1) + ' mi' : ''}</span>
+        ${i === PICKED ? `<span class="c${r.n ? '' : ' clean'}">${r.n ? esc(T('Nothing avoids them all. The cleanest way passes {n}.', { n: r.n })) : esc(T('clear of every camera'))}</span>` : ''}
+      </button>`).join('');
+  box.classList.add('show');
+  box.querySelectorAll('[data-i]').forEach(b => b.onclick = () => { PICKED = +b.dataset.i; drawRoutes(); });
+  box.querySelectorAll('[data-mode]').forEach(b => b.onclick = () => {
+    if (MODE === b.dataset.mode || !ROUTE_ENDS) return;
+    MODE = b.dataset.mode; runRoute(ROUTE_ENDS.from, ROUTE_ENDS.to);
+  });
+  box.querySelector('[data-clear]').onclick = clearRoutes;
+}
+
+function clearRoutes() {
+  ROUTED = []; PICKED = 0; ROUTE_ENDS = null;
+  ROUTE_LAYER.clearLayers();
+  $('#routes').classList.remove('show');
+  $('#routes').innerHTML = '';
+  PLANNING = false;
+  $('#plan').classList.remove('on', 'busy');
+}
+
+async function runRoute(from, to) {
+  ROUTE_ENDS = { from, to };
+  $('#plan').classList.add('busy');
+  say(T('Finding a way around them…'));
+  try {
+    let list = scoreAndKeep(await valhalla(from, to));
+    // Still passing cameras? Ask again, with those cameras named as places to avoid.
+    if (list.length && list[0].n) {
+      try {
+        // A camera sitting on top of the start or the finish cannot be avoided, and asking
+        // for it anyway makes the router refuse the whole request.
+        const near = (c, p) => haversine(c.lat, c.lon, p.lat, p.lon) < 0.09;   // ~150 m
+        const avoid = list[0].hits.filter(c => !near(c, from) && !near(c, to));
+        if (!avoid.length) throw new Error('nothing left to avoid');
+        const more = await valhalla(from, to, avoid);
+        list = scoreAndKeep(list.concat(more));
+      } catch (e) { /* the first answers still stand */ }
+    }
+    if (!list.length) { say(T('No route came back. The routing service may be busy.'), true); return; }
+    ROUTED = list.slice(0, 4); PICKED = 0;
+    drawRoutes();
+    map.fitBounds(L.polyline(ROUTED[0].pts).getBounds(), { padding: [30, 30] });
+    say('');
+  } catch (err) {
+    say(T('Routing failed — no internet, or the routing service is busy.'), true);
+  } finally {
+    $('#plan').classList.remove('busy', 'on');
+    PLANNING = false;
+  }
+}
+
+$('#plan').onclick = () => {
+  if (ROUTED.length) return clearRoutes();
+  if (PLANNING) { PLANNING = false; $('#plan').classList.remove('on'); say(''); return; }
+  if (!HOME) return say(T('Start somewhere first: press the locate button, or type an address.'), true);
+  PLANNING = true;
+  $('#plan').classList.add('on');
+  say(T('Tap the map where you want to finish.'));
+};
+map.on('click', e => {
+  if (!PLANNING || !HOME) return;
+  PLANNING = false;
+  runRoute({ lat: HOME.lat, lon: HOME.lon }, { lat: e.latlng.lat, lon: e.latlng.lng });
+});
+
+// Phone only: scrolling the list is a statement that the list is what is wanted, so it takes
+// the room and the map drops to about half. Back at the top, the map comes back up.
+const PHONE = matchMedia('(max-width:760px)');
+(() => {
+  const app = document.querySelector('.app'), list = $('#list');
+  let queued = false;
+  // Leaflet sizes its tiles once; after the box changes it has to be told.
+  const settle = () => setTimeout(() => map.invalidateSize({ pan: false }), 320);
+  const apply = () => {
+    queued = false;
+    const grown = app.classList.contains('grown');
+    // Two thresholds, so a list resting near the line does not flicker between the two.
+    const want = PHONE.matches && (grown ? list.scrollTop > 8 : list.scrollTop > 32);
+    if (want !== grown) { app.classList.toggle('grown', want); settle(); }
+  };
+  list.addEventListener('scroll', () => { if (!queued) { queued = true; requestAnimationFrame(apply); } }, { passive: true });
+  PHONE.addEventListener('change', apply);
+})();
 
 // Keeping a saved copy current.
 // The worker calls skipWaiting, so a republished sw.js takes over as soon as it installs.
@@ -738,7 +1337,7 @@ if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.
       // so a reload never lands in the middle of reading a camera.
       if (performance.now() - OPENED < 8000 || document.hidden) return swap();
       PENDING = true;
-      try { say('Updated — reopen to get the new version'); } catch (e) {}
+      try { say(T('Updated — reopen to get the new version')); } catch (e) {}
     });
   }).catch(() => {});
 }
