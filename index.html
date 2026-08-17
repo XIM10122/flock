@@ -186,6 +186,26 @@
   .locate.busy{color:transparent}
   .locate.busy::after{border-color:var(--ink3);border-top-color:var(--ink)}
 
+  /* minmax(0,1fr): without it the grid sizes its column to the widest row and the
+     buttons hang off the edge of the box on a phone. */
+  .trip-body{padding:0 16px 16px;display:grid;grid-template-columns:minmax(0,1fr);gap:10px}
+  .trip-body .fld{display:grid;gap:5px}
+  .trip-body label{font:600 10.5px/1 var(--mono);letter-spacing:.14em;text-transform:uppercase;color:var(--ink3)}
+  .trip-body .row{display:flex;gap:6px;align-items:center;min-width:0}
+  .trip-body input{flex:1 1 auto;min-width:0;padding:10px 12px;border-radius:var(--r);border:1px solid var(--line);
+                   background:var(--sink);color:var(--ink);font:inherit;box-shadow:inset 0 1px 2px rgba(0,0,0,.35)}
+  .trip-body input:focus{outline:none;border-color:var(--amber);box-shadow:inset 0 1px 2px rgba(0,0,0,.35),0 0 0 3px var(--amber-dim)}
+  .trip-body .row button{flex:none;font-size:12px;padding:9px 10px}
+  #from-me{width:38px;display:grid;place-items:center;padding:0}
+  #from-me svg{width:17px;height:17px}
+  #swap{justify-self:start;padding:4px 10px;font-size:12px;box-shadow:none;color:var(--ink2)}
+  .seg{display:flex;gap:1px;min-width:0;background:var(--line2);border-radius:var(--r-s);overflow:hidden}
+  .seg button{flex:1 1 0;min-width:0;border:0;border-radius:0;background:var(--key);color:var(--ink2);font-size:12px;padding:9px 4px;box-shadow:none}
+  .seg button.on{background:var(--chosen);color:var(--amber-tx);font-weight:600}
+  .go{width:100%;padding:12px;font-weight:600;border-color:var(--amber);color:var(--amber-tx);background:var(--amber-dim)}
+  .go:hover{background:var(--chosen)}
+  #tripstatus{padding:0}
+
   /* Route planner: same round control as locate, sitting above it. */
   .plan{position:absolute;right:10px;bottom:72px;z-index:500;width:42px;height:42px;padding:0;
         display:grid;place-items:center;border-radius:50%;background:var(--card);color:var(--ink2);box-shadow:var(--lift)}
@@ -307,6 +327,44 @@
   </div>
 </div>
 
+<dialog id="trip" aria-labelledby="trip-title">
+  <div class="sheet-h"><b id="trip-title">Find a route</b><button id="trip-x">Close</button></div>
+  <div class="trip-body">
+    <div class="fld">
+      <label id="l-from" for="from">From</label>
+      <div class="row">
+        <input id="from" autocomplete="off" placeholder="Where you are">
+        <button id="from-me" title="Use my location" aria-label="Use my location">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="3.4"/><path d="M12 1.6v3.2M12 19.2v3.2M1.6 12h3.2M19.2 12h3.2"/></svg>
+        </button>
+        <button id="from-pick" data-pick="from">Pick on map</button>
+      </div>
+    </div>
+    <button id="swap" title="Swap them">⇅</button>
+    <div class="fld">
+      <label id="l-to" for="to">To</label>
+      <div class="row">
+        <input id="to" autocomplete="off" placeholder="Street, town, or address">
+        <button id="to-pick" data-pick="to">Pick on map</button>
+      </div>
+    </div>
+    <div class="fld">
+      <label id="l-how">How you are going</label>
+      <div class="seg" id="modes">
+        <button data-m="run">Run</button><button data-m="walk">Walk</button><button data-m="bike">Bike</button><button data-m="drive">Drive</button>
+      </div>
+    </div>
+    <div class="fld">
+      <label id="l-wide">How wide to steer around them</label>
+      <div class="seg" id="widths">
+        <button data-w="close">Closer</button><button data-w="normal">Normal</button><button data-w="wide">Wider</button>
+      </div>
+    </div>
+    <div class="status" id="tripstatus" role="status"></div>
+    <button id="go" class="go">Find routes</button>
+  </div>
+</dialog>
+
 <dialog id="tips" aria-labelledby="tips-title">
   <div class="sheet-h"><b id="tips-title">What people do about these</b><button id="tips-x">Close</button></div>
   <ul class="tiplist" id="tiplist"></ul>
@@ -402,6 +460,33 @@ const DICT = {
     // routes
     'Plan a route that avoids the cameras': 'Traçar uma rota que evita as câmeras',
     'Route': 'Rota',
+    'Closer': 'Mais perto',
+    'Wider': 'Mais longe',
+    'Find a route': 'Encontrar uma rota',
+    'From': 'De',
+    'To': 'Para',
+    'Where you are': 'Onde você está',
+    'Use my location': 'Usar minha localização',
+    'Pick on map': 'Escolher no mapa',
+    'Swap them': 'Inverter',
+    'How you are going': 'Como você vai',
+    'Walk': 'Andar',
+    'Bike': 'Bicicleta',
+    'How wide to steer around them': 'Quão longe passar delas',
+    'Normal': 'Normal',
+    'Wide': 'Longe',
+    'Find routes': 'Encontrar rotas',
+    'Looking up the addresses…': 'Procurando os endereços…',
+    'Could not find that starting point.': 'Não encontrei esse ponto de partida.',
+    'Could not find that destination.': 'Não encontrei esse destino.',
+    'Tap the map to set the start.': 'Toque no mapa para marcar o início.',
+    'Tap the map to set the finish.': 'Toque no mapa para marcar o fim.',
+    'Pinned point': 'Ponto marcado',
+    'Edit': 'Editar',
+    'Start': 'Início',
+    'Finish': 'Fim',
+    '{n} min': '{n} min',
+    '{h} h {m}': '{h} h {m}',
     'Tap the map where you want to finish.': 'Toque no mapa onde você quer terminar.',
     'Start somewhere first: press the locate button, or type an address.': 'Comece de algum lugar: toque no botão de localização, ou digite um endereço.',
     'Finding a way around them…': 'Procurando um caminho ao redor delas…',
@@ -495,6 +580,33 @@ const DICT = {
     // routes
     'Plan a route that avoids the cameras': 'Trazar una ruta que evite las cámaras',
     'Route': 'Ruta',
+    'Closer': 'Más cerca',
+    'Wider': 'Más lejos',
+    'Find a route': 'Encontrar una ruta',
+    'From': 'Desde',
+    'To': 'Hasta',
+    'Where you are': 'Donde estás',
+    'Use my location': 'Usar mi ubicación',
+    'Pick on map': 'Elegir en el mapa',
+    'Swap them': 'Invertir',
+    'How you are going': 'Cómo vas',
+    'Walk': 'Caminar',
+    'Bike': 'Bici',
+    'How wide to steer around them': 'Cuánto rodearlas',
+    'Normal': 'Normal',
+    'Wide': 'Lejos',
+    'Find routes': 'Encontrar rutas',
+    'Looking up the addresses…': 'Buscando las direcciones…',
+    'Could not find that starting point.': 'No encontré ese punto de partida.',
+    'Could not find that destination.': 'No encontré ese destino.',
+    'Tap the map to set the start.': 'Toca el mapa para marcar el inicio.',
+    'Tap the map to set the finish.': 'Toca el mapa para marcar el final.',
+    'Pinned point': 'Punto marcado',
+    'Edit': 'Editar',
+    'Start': 'Inicio',
+    'Finish': 'Final',
+    '{n} min': '{n} min',
+    '{h} h {m}': '{h} h {m}',
     'Tap the map where you want to finish.': 'Toca el mapa donde quieres terminar.',
     'Start somewhere first: press the locate button, or type an address.': 'Empieza desde algún sitio: toca el botón de ubicación, o escribe una dirección.',
     'Finding a way around them…': 'Buscando un camino que las rodee…',
@@ -1102,6 +1214,23 @@ function applyLang() {
   $('#grip').setAttribute('aria-label', T('Make the list taller or shorter'));
   $('#list').setAttribute('aria-label', T('Plate readers'));
   document.querySelectorAll('.layers button').forEach(b => b.textContent = T(b.dataset.l === 'map' ? 'Map' : 'Satellite'));
+  $('#trip-title').textContent = T('Find a route');
+  $('#trip-x').textContent = T('Close');
+  $('#l-from').textContent = T('From');
+  $('#l-to').textContent = T('To');
+  $('#l-how').textContent = T('How you are going');
+  $('#l-wide').textContent = T('How wide to steer around them');
+  $('#from').placeholder = T('Where you are');
+  $('#to').placeholder = T('Street, town, or address');
+  $('#from-me').title = T('Use my location');
+  $('#from-me').setAttribute('aria-label', T('Use my location'));
+  $('#swap').title = T('Swap them');
+  $('#go').textContent = T('Find routes');
+  document.querySelectorAll('[data-pick]').forEach(b => b.textContent = T('Pick on map'));
+  { const L = { run: 'Run', walk: 'Walk', bike: 'Bike', drive: 'Drive' };
+    $('#modes').querySelectorAll('button').forEach(b => b.textContent = T(L[b.dataset.m]));
+    const Wd = { close: 'Closer', normal: 'Normal', wide: 'Wider' };
+    $('#widths').querySelectorAll('button').forEach(b => b.textContent = T(Wd[b.dataset.w])); }
   const p = $('#plan');
   p.title = T('Plan a route that avoids the cameras'); p.setAttribute('aria-label', p.title);
   $('#lang').title = T('Language'); $('#lang').setAttribute('aria-label', T('Language'));
@@ -1255,7 +1384,7 @@ paintTip();
 // there. Each one is measured against the camera list, and whichever passes fewest wins.
 // If the best still passes some, it is asked again with those exact cameras excluded.
 const VALHALLA = 'https://valhalla1.openstreetmap.de/route';
-const PASS_M = 55;          // within this of the line is "you went past it"
+let PASS_M = 55;            // within this of the line is "you went past it"
 const ROUTE_LINE = { clean: '#D68A3E', other: '#6F6B66' };
 let PLANNING = false, ROUTED = [], ROUTE_LAYER = L.layerGroup(), PICKED = 0, MODE = 'pedestrian', ROUTE_ENDS = null;
 ROUTE_LAYER.addTo(map);
@@ -1308,13 +1437,33 @@ function camerasOn(pts) {
   return hit;
 }
 
+// Four ways of going. Run and Walk are the same costing at different speeds, which is
+// what changes the time it quotes rather than the roads it picks.
+const MODES = {
+  run:   { costing: 'pedestrian', costing_options: { pedestrian: { walking_speed: 9.5 } } },
+  walk:  { costing: 'pedestrian' },
+  bike:  { costing: 'bicycle' },
+  drive: { costing: 'auto' },
+};
+const WIDTHS = { close: 30, normal: 55, wide: 120 };
+let TRIPMODE = 'run', WIDTH = 'normal';
+try {
+  const m = localStorage.getItem('flock.mode'); if (m in MODES) TRIPMODE = m;
+  const w = localStorage.getItem('flock.width'); if (w in WIDTHS) WIDTH = w;
+} catch (e) {}
+PASS_M = WIDTHS[WIDTH];
+
+let FROM = null, TO = null, PICKING = null;
+
 async function valhalla(from, to, exclude) {
+  const m = MODES[TRIPMODE];
   const body = {
     locations: [{ lat: from.lat, lon: from.lon }, { lat: to.lat, lon: to.lon }],
-    costing: MODE, alternates: 2, units: 'miles',
+    costing: m.costing, alternates: 3, units: 'miles',
     directions_options: { language: 'en-US' },   // the router's own words stay English
   };
-  if (exclude && exclude.length) body.exclude_locations = exclude.slice(0, 50).map(c => ({ lat: c.lat, lon: c.lon }));
+  if (m.costing_options) body.costing_options = m.costing_options;
+  if (exclude && exclude.length) body.exclude_locations = exclude.slice(0, 48).map(c => ({ lat: c.lat, lon: c.lon }));
   const r = await fetch(VALHALLA + '?json=' + encodeURIComponent(JSON.stringify(body)));
   if (!r.ok) throw new Error('router ' + r.status);
   const j = await r.json();
@@ -1322,6 +1471,7 @@ async function valhalla(from, to, exclude) {
   return trips.map(t => ({
     pts: t.legs.flatMap(l => decode6(l.shape)),
     miles: t.summary ? t.summary.length : 0,
+    secs: t.summary ? t.summary.time : 0,
   }));
 }
 
@@ -1335,6 +1485,37 @@ function scoreAndKeep(list) {
              .sort((a, b) => a.n - b.n || a.miles - b.miles);
 }
 
+// Ask, look at what the best answer still passes, name those as places to avoid, ask
+// again. Three rounds at most, and it stops early the moment a round stops helping —
+// otherwise it would keep paying for calls that return the same road.
+async function search(from, to) {
+  const onEnd = (c, pt) => haversine(c.lat, c.lon, pt.lat, pt.lon) < 0.09;   // ~150 m
+  let pool = scoreAndKeep(await valhalla(from, to));
+  const avoid = new Map();
+  for (let round = 0; round < 3 && pool.length && pool[0].n; round++) {
+    let added = 0;
+    for (const c of pool[0].hits) {
+      // A camera on top of the start or the finish cannot be avoided, and asking anyway
+      // makes the router refuse the whole request.
+      if (!avoid.has(c.id) && !onEnd(c, from) && !onEnd(c, to)) { avoid.set(c.id, c); added++; }
+    }
+    if (!added) break;
+    const before = pool[0].n;
+    let more;
+    try { more = await valhalla(from, to, [...avoid.values()]); }
+    catch (e) { break; }                       // the answers already in hand still stand
+    pool = scoreAndKeep(pool.concat(more));
+    if (pool[0].n >= before) break;
+  }
+  return pool;
+}
+
+const fmtSecs = t => {
+  const m = Math.round(t / 60);
+  return m < 60 ? T('{n} min', { n: m })
+                : T('{h} h {m}', { h: Math.floor(m / 60), m: String(m % 60).padStart(2, '0') });
+};
+
 function drawRoutes() {
   ROUTE_LAYER.clearLayers();
   ROUTED.forEach((r, i) => {
@@ -1344,22 +1525,28 @@ function drawRoutes() {
       weight: on ? 5 : 3, opacity: on ? .95 : .45, dashArray: on ? null : '5 6', interactive: false,
     }));
   });
+  // The two ends, so it is obvious which way round the line runs.
+  const pick = ROUTED[PICKED];
+  if (pick && pick.pts.length) {
+    const ends = [[pick.pts[0], '#D2CEC7', T('Start')], [pick.pts[pick.pts.length - 1], '#D68A3E', T('Finish')]];
+    for (const [pt, col, label] of ends) {
+      ROUTE_LAYER.addLayer(L.circleMarker(pt, {
+        radius: 6, color: col, weight: 2, fillColor: '#171213', fillOpacity: 1,
+      }).bindTooltip(label, { direction: 'top' }));
+    }
+  }
   const box = $('#routes');
   box.innerHTML = `<div class="routes-h"><b>${esc(T('Routes'))}</b><span class="sp"></span>
-      <button data-mode="pedestrian" class="${MODE === 'pedestrian' ? 'on' : ''}">${esc(T('Run'))}</button>
-      <button data-mode="auto" class="${MODE === 'auto' ? 'on' : ''}">${esc(T('Drive'))}</button>
+      <button data-edit="1">${esc(T('Edit'))}</button>
       <button data-clear="1">${esc(T('Clear'))}</button></div>` +
     ROUTED.map((r, i) => `<button class="opt${i === PICKED ? ' on' : ''}" data-i="${i}">
         <span class="w">${r.n === 0 ? esc(T('no cameras')) : r.n === 1 ? esc(T('1 camera')) : esc(T('{n} cameras passed', { n: r.n }))}</span>
-        <span class="m">${r.miles ? r.miles.toFixed(1) + ' mi' : ''}</span>
+        <span class="m">${r.miles ? fmtMi(r.miles) : ''}${r.secs ? ' \u00b7 ' + esc(fmtSecs(r.secs)) : ''}</span>
         ${i === PICKED ? `<span class="c${r.n ? '' : ' clean'}">${r.n ? esc(T('Nothing avoids them all. The cleanest way passes {n}.', { n: r.n })) : esc(T('clear of every camera'))}</span>` : ''}
       </button>`).join('');
   box.classList.add('show');
   box.querySelectorAll('[data-i]').forEach(b => b.onclick = () => { PICKED = +b.dataset.i; drawRoutes(); });
-  box.querySelectorAll('[data-mode]').forEach(b => b.onclick = () => {
-    if (MODE === b.dataset.mode || !ROUTE_ENDS) return;
-    MODE = b.dataset.mode; runRoute(ROUTE_ENDS.from, ROUTE_ENDS.to);
-  });
+  box.querySelector('[data-edit]').onclick = openTrip;
   box.querySelector('[data-clear]').onclick = clearRoutes;
 }
 
@@ -1375,47 +1562,118 @@ function clearRoutes() {
 async function runRoute(from, to) {
   ROUTE_ENDS = { from, to };
   $('#plan').classList.add('busy');
-  say(T('Finding a way around them…'));
+  say(T('Finding a way around them\u2026'));
   try {
-    let list = scoreAndKeep(await valhalla(from, to));
-    // Still passing cameras? Ask again, with those cameras named as places to avoid.
-    if (list.length && list[0].n) {
-      try {
-        // A camera sitting on top of the start or the finish cannot be avoided, and asking
-        // for it anyway makes the router refuse the whole request.
-        const near = (c, p) => haversine(c.lat, c.lon, p.lat, p.lon) < 0.09;   // ~150 m
-        const avoid = list[0].hits.filter(c => !near(c, from) && !near(c, to));
-        if (!avoid.length) throw new Error('nothing left to avoid');
-        const more = await valhalla(from, to, avoid);
-        list = scoreAndKeep(list.concat(more));
-      } catch (e) { /* the first answers still stand */ }
-    }
+    const list = await search(from, to);
     if (!list.length) { say(T('No route came back. The routing service may be busy.'), true); return; }
     ROUTED = list.slice(0, 4); PICKED = 0;
     drawRoutes();
     map.fitBounds(L.polyline(ROUTED[0].pts).getBounds(), { padding: [30, 30] });
     say('');
   } catch (err) {
-    say(T('Routing failed — no internet, or the routing service is busy.'), true);
+    say(T('Routing failed \u2014 no internet, or the routing service is busy.'), true);
   } finally {
     $('#plan').classList.remove('busy', 'on');
     PLANNING = false;
   }
 }
 
-$('#plan').onclick = () => {
-  if (ROUTED.length) return clearRoutes();
-  if (PLANNING) { PLANNING = false; $('#plan').classList.remove('on'); say(''); return; }
-  if (!HOME) return say(T('Start somewhere first: press the locate button, or type an address.'), true);
-  PLANNING = true;
-  $('#plan').classList.add('on');
-  say(T('Tap the map where you want to finish.'));
+// ---------------------------------------------------------------- the box
+const trip = $('#trip');
+const tripSay = (msg, bad) => {
+  const el = $('#tripstatus');
+  el.textContent = msg || '';
+  el.classList.toggle('bad', !!bad);
 };
-map.on('click', e => {
-  if (!PLANNING || !HOME) return;
-  PLANNING = false;
-  runRoute({ lat: HOME.lat, lon: HOME.lon }, { lat: e.latlng.lat, lon: e.latlng.lng });
+function paintSegs() {
+  $('#modes').querySelectorAll('button').forEach(b => b.classList.toggle('on', b.dataset.m === TRIPMODE));
+  $('#widths').querySelectorAll('button').forEach(b => b.classList.toggle('on', b.dataset.w === WIDTH));
+}
+function openTrip() {
+  if (HOME && !$('#from').value) { FROM = { lat: HOME.lat, lon: HOME.lon, name: HOME.name }; $('#from').value = HOME.name; }
+  paintSegs();
+  tripSay('');
+  trip.showModal();
+}
+$('#plan').onclick = () => { PICKING ? cancelPick() : openTrip(); };
+$('#trip-x').onclick = () => trip.close();
+trip.addEventListener('click', e => { if (e.target === trip) trip.close(); });
+
+$('#modes').querySelectorAll('button').forEach(b => b.onclick = () => {
+  TRIPMODE = b.dataset.m;
+  try { localStorage.setItem('flock.mode', TRIPMODE); } catch (e) {}
+  paintSegs();
 });
+$('#widths').querySelectorAll('button').forEach(b => b.onclick = () => {
+  WIDTH = b.dataset.w; PASS_M = WIDTHS[WIDTH];
+  try { localStorage.setItem('flock.width', WIDTH); } catch (e) {}
+  paintSegs();
+});
+$('#swap').onclick = () => {
+  const a = $('#from').value, b = $('#to').value;
+  $('#from').value = b; $('#to').value = a;
+  const f = FROM; FROM = TO; TO = f;
+};
+$('#from-me').onclick = () => {
+  if (HOME) { FROM = { lat: HOME.lat, lon: HOME.lon, name: HOME.name }; $('#from').value = HOME.name; return; }
+  if (!navigator.geolocation) return tripSay(T('This browser cannot share a location. Type an address instead.'), true);
+  tripSay(T('Finding you\u2026'));
+  navigator.geolocation.getCurrentPosition(pos => {
+    FROM = { lat: pos.coords.latitude, lon: pos.coords.longitude, name: T('Where you are') };
+    $('#from').value = FROM.name;
+    tripSay('');
+  }, () => tripSay(T('Could not get a location. Type an address instead.'), true),
+     { enableHighAccuracy: true, timeout: 15000 });
+};
+
+// Picking on the map: the box gets out of the way, the next tap is the point, and the
+// box comes straight back with the field filled in.
+function cancelPick() { PICKING = null; $('#plan').classList.remove('on'); say(''); }
+document.querySelectorAll('[data-pick]').forEach(b => b.onclick = () => {
+  PICKING = b.dataset.pick;
+  trip.close();
+  $('#plan').classList.add('on');
+  say(PICKING === 'from' ? T('Tap the map to set the start.') : T('Tap the map to set the finish.'));
+});
+map.on('click', e => {
+  if (!PICKING) return;
+  const which = PICKING;
+  PICKING = null;
+  $('#plan').classList.remove('on');
+  const pt = { lat: e.latlng.lat, lon: e.latlng.lng, name: T('Pinned point') };
+  if (which === 'from') { FROM = pt; $('#from').value = pt.name; }
+  else { TO = pt; $('#to').value = pt.name; }
+  say('');
+  openTrip();
+});
+
+// A field that still reads as it was resolved is taken as-is; anything retyped is looked up.
+async function resolve(which) {
+  const txt = $('#' + which).value.trim();
+  const held = which === 'from' ? FROM : TO;
+  if (held && held.name === txt) return held;
+  if (!txt) return which === 'from' && HOME ? { lat: HOME.lat, lon: HOME.lon, name: HOME.name } : null;
+  return await geocode(txt);
+}
+$('#go').onclick = async () => {
+  const go = $('#go');
+  go.disabled = true; tripSay(T('Looking up the addresses\u2026'));
+  try {
+    const f = await resolve('from');
+    if (!f) return tripSay(T('Could not find that starting point.'), true);
+    const t = await resolve('to');
+    if (!t) return tripSay(T('Could not find that destination.'), true);
+    FROM = f; TO = t;
+    $('#from').value = f.name; $('#to').value = t.name;
+    tripSay('');
+    trip.close();
+    runRoute(f, t);
+  } catch (err) {
+    tripSay(T('Address lookup failed \u2014 no internet, or the lookup service is busy.'), true);
+  } finally {
+    go.disabled = false;
+  }
+};
 
 // Phone only: scrolling the list is a statement that the list is what is wanted, so it takes
 // the room and the map drops to about half. Back at the top, the map comes back up.
