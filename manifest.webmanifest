@@ -1,0 +1,21 @@
+{
+ "name": "Flock \u2014 Charleston plate readers",
+ "short_name": "Flock",
+ "start_url": "./",
+ "scope": "./",
+ "display": "standalone",
+ "background_color": "#171213",
+ "theme_color": "#171213",
+ "icons": [
+  {
+   "src": "icon-192.png",
+   "sizes": "192x192",
+   "type": "image/png"
+  },
+  {
+   "src": "icon-512.png",
+   "sizes": "512x512",
+   "type": "image/png"
+  }
+ ]
+}
