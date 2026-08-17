@@ -363,6 +363,7 @@ const DICT = {
     'Police': 'Polícia',
     'no details recorded': 'sem detalhes registrados',
     'faces {d}': 'aponta para {d}',
+    'and': 'e',
     '{mi} from {name}': '{mi} de {name}',
     'Copy address': 'Copiar endereço',
     'Copy link': 'Copiar link',
@@ -455,6 +456,7 @@ const DICT = {
     'Police': 'Policía',
     'no details recorded': 'sin detalles registrados',
     'faces {d}': 'apunta hacia {d}',
+    'and': 'y',
     '{mi} from {name}': '{mi} desde {name}',
     'Copy address': 'Copiar dirección',
     'Copy link': 'Copiar enlace',
@@ -582,7 +584,9 @@ let conesOn = false;
 
 // "0;182" is two readers on one pole facing both ways: one tick per direction
 const dirs = d => String(d ?? '').split(';').map(s => s.trim()).filter(s => s !== '' && !isNaN(+s)).map(Number);
-const dirText = d => { const a = dirs(d); return a.length ? a.map(x => x + '°').join(' and ') : ''; };
+// Two bearings on one pole read as "0° and 176°"; the joining word is a word, so it
+// gets translated with everything else.
+const dirText = d => { const a = dirs(d); return a.length ? a.map(x => x + '°').join(' ' + T('and') + ' ') : ''; };
 
 function pinIcon(dir, on) {
   const rot = dirs(dir).map(x => `<s style="transform:rotate(${x}deg)"></s>`).join('');
@@ -1110,7 +1114,11 @@ function applyLang() {
   // An open popup still holds the old wording, and rewriting it under the reader is worse
   // than closing it.
   map.closePopup();
-  if (CAMS.length) { buildChips(); render($('#q').value); }
+  if (CAMS.length) {
+    buildChips(); render($('#q').value);
+    // Popup bodies are built once and kept; a new language means new bodies.
+    for (const c of CAMS) if (MARK[c.id]) MARK[c.id].setPopupContent(popupHtml(c));
+  }
   if (ROUTED.length) drawRoutes();
   if (typeof paintTip === 'function') paintTip();
 }
