@@ -1,10 +1,12 @@
-const V = 'flock-202608170751';
+const V = 'flock-202608170751-e3b0795f';
 const CORE = ['./', './index.html', './manifest.webmanifest', './icon-192.png', './icon-512.png', './icon.svg'];
 // Pinned to a version in the URL, so once cached they never need revalidating.
 const LIB = ['https://unpkg.com/leaflet@1.9.4/dist/leaflet.css', 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js'];
 const TILE_CAP = 1200;   // roughly a county at the zooms you actually read
 
-self.addEventListener('install', e => { e.waitUntil(caches.open(V).then(c => c.addAll(CORE.concat(LIB))).then(() => self.skipWaiting())); });
+// cache:'reload' on CORE: the browser's own HTTP cache must not hand this new worker the
+// previous build's page. LIB is pinned to a version in the URL, so it is fine as-is.
+self.addEventListener('install', e => { e.waitUntil(caches.open(V).then(c => c.addAll(CORE.map(u => new Request(u, {cache: 'reload'})).concat(LIB))).then(() => self.skipWaiting())); });
 self.addEventListener('activate', e => { e.waitUntil(caches.keys().then(ks => Promise.all(ks.filter(k => k !== V).map(k => caches.delete(k)))).then(() => self.clients.claim())); });
 
 // Cache API keys come back in insertion order, so the oldest tiles are at the front.

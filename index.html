@@ -702,7 +702,46 @@ const standalone = matchMedia('(display-mode: standalone)').matches || navigator
 $('#install').hidden = standalone;
 addEventListener('appinstalled', () => { $('#install').hidden = true; sheet.close(); });
 
-if ('serviceWorker' in navigator && location.protocol === 'https:') navigator.serviceWorker.register('sw.js').catch(() => {});
+// Keeping a saved copy current.
+// The worker calls skipWaiting, so a republished sw.js takes over as soon as it installs.
+// The page then reloads itself once, which is what makes opening the link update a copy
+// that was saved weeks ago instead of showing last month's map until the next open.
+if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) {
+  const SW = navigator.serviceWorker;
+  // updateViaCache:'none' stops the browser serving sw.js from its own HTTP cache, which
+  // is what otherwise hides a new build for up to a day.
+  SW.register('sw.js', { updateViaCache: 'none' }).then(reg => {
+    // Was this tab already under a worker? If not, this is the first ever visit and the
+    // handover below is just the normal install, not an update.
+    const HAD = !!SW.controller;
+    const OPENED = performance.now();
+    let RELOADING = false, PENDING = false, LAST = 0;
+
+    const check = () => {
+      if (document.hidden || performance.now() - LAST < 30000) return;
+      LAST = performance.now();
+      reg.update().catch(() => {});
+    };
+    check();
+    addEventListener('visibilitychange', () => { if (!document.hidden) { check(); if (PENDING) swap(); } });
+    addEventListener('online', check);
+
+    function swap() {
+      if (RELOADING) return;
+      RELOADING = true;
+      location.reload();
+    }
+
+    SW.addEventListener('controllerchange', () => {
+      if (!HAD) return;                       // first install: nothing to replace
+      // Straight in if they have only just opened it, or are not looking. Otherwise wait,
+      // so a reload never lands in the middle of reading a camera.
+      if (performance.now() - OPENED < 8000 || document.hidden) return swap();
+      PENDING = true;
+      try { say('Updated — reopen to get the new version'); } catch (e) {}
+    });
+  }).catch(() => {});
+}
 </script>
 </body>
 </html>
